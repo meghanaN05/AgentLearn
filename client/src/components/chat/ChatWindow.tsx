@@ -1,12 +1,18 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
+
+import chatService from "../../services/chatService";
 import ChatInput from "./ChatInput";
 import ChatHistory, { Message } from "./ChatHistory";
 import SuggestedQuestions from "./SuggestedQuestions";
+import Loader from "../common/Loader";
 
 const ChatWindow = () => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [sessionId, setSessionId] = useState<string | undefined>();
+  const [loading, setLoading] = useState(false);
 
-  const sendMessage = (text: string) => {
+  const sendMessage = async (text: string) => {
     const userMessage: Message = {
       id: crypto.randomUUID(),
       text,
@@ -15,18 +21,29 @@ const ChatWindow = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    setLoading(true);
 
-    // Temporary AI response
-    setTimeout(() => {
+    try {
+      const response = await chatService.sendMessage({
+        message: text,
+        sessionId,
+      });
+
+      setSessionId(response.sessionId);
+
       const aiMessage: Message = {
         id: crypto.randomUUID(),
-        text: "This is a placeholder AI response. Replace it with your FastAPI/LangGraph API call.",
+        text: response.answer,
         isUser: false,
         timestamp: new Date().toLocaleTimeString(),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
+    } catch {
+      toast.error("Failed to get AI response. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,9 +52,15 @@ const ChatWindow = () => {
         <SuggestedQuestions onSelect={sendMessage} />
 
         <ChatHistory messages={messages} />
+
+        {loading && (
+          <div className="flex justify-center py-4">
+            <Loader />
+          </div>
+        )}
       </div>
 
-      <ChatInput onSend={sendMessage} />
+      <ChatInput onSend={sendMessage} loading={loading} />
     </div>
   );
 };

@@ -1,5 +1,9 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
+import useAuth from "../../hooks/useAuth";
 import Button from "../common/Button";
 import Input from "../common/Input";
 
@@ -9,14 +13,27 @@ interface LoginData {
 }
 
 const LoginForm = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginData>();
 
-  const onSubmit = (data: LoginData) => {
-    console.log(data);
+  const onSubmit = async (data: LoginData) => {
+    try {
+      setLoading(true);
+      await login(data);
+      toast.success("Welcome back!");
+      navigate("/dashboard");
+    } catch {
+      toast.error("Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,8 +88,9 @@ const LoginForm = () => {
         <Button
           type="submit"
           className="w-full"
+          disabled={loading}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </Button>
 
       </form>

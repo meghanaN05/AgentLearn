@@ -1,5 +1,9 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
+import useAuth from "../../hooks/useAuth";
 import Button from "../common/Button";
 import Input from "../common/Input";
 
@@ -10,14 +14,27 @@ interface SignupData {
 }
 
 const SignupForm = () => {
+  const { signup } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<SignupData>();
 
-  const onSubmit = (data: SignupData) => {
-    console.log(data);
+  const onSubmit = async (data: SignupData) => {
+    try {
+      setLoading(true);
+      await signup(data);
+      toast.success("Account created successfully!");
+      navigate("/dashboard");
+    } catch {
+      toast.error("Could not create account. Email may already be registered.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,14 +70,19 @@ const SignupForm = () => {
           placeholder="Password"
           {...register("password", {
             required: "Password is required",
+            minLength: {
+              value: 6,
+              message: "Password must be at least 6 characters",
+            },
           })}
         />
 
         <Button
           type="submit"
           className="w-full"
+          disabled={loading}
         >
-          Register
+          {loading ? "Creating account..." : "Register"}
         </Button>
 
       </form>

@@ -1,15 +1,21 @@
-import { FileText, Trash2, Eye } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
 
 interface Props {
+  id: string;
   fileName: string;
   pages: number;
   size: string;
+  status?: string;
+  onDelete?: (id: string) => void;
 }
 
 const PDFCard = ({
+  id,
   fileName,
   pages,
   size,
+  status = "completed",
+  onDelete,
 }: Props) => {
   return (
     <div className="bg-white shadow-md rounded-xl p-5 flex justify-between items-center">
@@ -32,7 +38,7 @@ const PDFCard = ({
           </p>
 
           <p className="text-gray-500 text-sm">
-            {size}
+            {size} · {status}
           </p>
 
         </div>
@@ -41,13 +47,16 @@ const PDFCard = ({
 
       <div className="flex gap-3">
 
-        <button className="text-blue-600">
-          <Eye />
-        </button>
-
-        <button className="text-red-600">
-          <Trash2 />
-        </button>
+        {onDelete && (
+          <button
+            type="button"
+            className="text-red-600"
+            onClick={() => onDelete(id)}
+            aria-label={`Delete ${fileName}`}
+          >
+            <Trash2 />
+          </button>
+        )}
 
       </div>
 

@@ -4,9 +4,10 @@ import { UploadCloud } from "lucide-react";
 
 interface Props {
   onFilesSelected: (files: File[]) => void;
+  disabled?: boolean;
 }
 
-const PDFUploader = ({ onFilesSelected }: Props) => {
+const PDFUploader = ({ onFilesSelected, disabled = false }: Props) => {
   const onDrop = useCallback((acceptedFiles: File[]) => {
     onFilesSelected(acceptedFiles);
   }, [onFilesSelected]);
@@ -17,12 +18,17 @@ const PDFUploader = ({ onFilesSelected }: Props) => {
     },
     multiple: true,
     onDrop,
+    disabled,
   });
 
   return (
     <div
       {...getRootProps()}
-      className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition ${
+      className={`border-2 border-dashed rounded-xl p-12 text-center transition ${
+        disabled
+          ? "opacity-60 cursor-not-allowed border-gray-300"
+          : "cursor-pointer"
+      } ${
         isDragActive
           ? "border-blue-600 bg-blue-50"
           : "border-gray-300 hover:border-blue-500"
@@ -40,7 +46,7 @@ const PDFUploader = ({ onFilesSelected }: Props) => {
       </h2>
 
       <p className="text-gray-500 mt-2">
-        or click here to browse
+        {disabled ? "Processing upload..." : "or click here to browse"}
       </p>
     </div>
   );

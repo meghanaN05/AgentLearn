@@ -1,0 +1,65 @@
+import api from "./api";
+
+export interface GenerateMockTestRequest {
+  pdfId: string;
+  difficulty: "easy" | "medium" | "hard";
+  numberOfQuestions: number;
+}
+
+export interface MockQuestion {
+  id: string;
+  question: string;
+  options: string[];
+}
+
+export interface MockTestResponse {
+  testId: string;
+  questions: MockQuestion[];
+}
+
+export interface SubmitMockTestRequest {
+  testId: string;
+  answers: {
+    questionId: string;
+    selectedOption: number;
+  }[];
+}
+
+export interface SubmitMockTestResponse {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  accuracy: number;
+  weakTopics: string[];
+}
+
+class MockTestService {
+  async generateMockTest(data: GenerateMockTestRequest) {
+    const response = await api.post<MockTestResponse>(
+      "/mocktest",
+      data
+    );
+
+    return response.data;
+  }
+
+  async submitMockTest(data: SubmitMockTestRequest) {
+    const response = await api.post<SubmitMockTestResponse>(
+      "/mocktest/submit",
+      data
+    );
+
+    return response.data;
+  }
+
+  async getMockTest(testId: string) {
+    const response = await api.get<MockTestResponse>(
+      `/mocktest/${testId}`
+    );
+
+    return response.data;
+  }
+}
+
+export default new MockTestService();
