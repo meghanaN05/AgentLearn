@@ -1,29 +1,32 @@
+import type { ReactNode } from "react";
+
 import Navbar from "./Navbar";
+
 import Sidebar from "./Sidebar";
 
 interface Props{
 
-    children: React.ReactNode;
+    children:ReactNode;
 
 }
 
-const Layout = ({children}:Props) => {
+const Layout = ({children}:Props)=>{
 
-    return (
+    return(
 
         <div className="flex">
 
             <Sidebar/>
 
-            <div className="flex-1 bg-gray-100 min-h-screen">
+            <div className="flex-1 bg-slate-100 min-h-screen">
 
                 <Navbar/>
 
-                <div className="p-8">
+                <main className="p-8">
 
                     {children}
 
-                </div>
+                </main>
 
             </div>
 
@@ -31,6 +34,6 @@ const Layout = ({children}:Props) => {
 
     );
 
-};
+}
 
 export default Layout;

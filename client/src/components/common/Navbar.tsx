@@ -1,28 +1,52 @@
-import { Bell, UserCircle } from "lucide-react";
+import { Bell, Search, UserCircle } from "lucide-react";
 
 const Navbar = () => {
   return (
-    <nav className="w-full h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm">
-      <div>
-        <h1 className="text-2xl font-bold text-blue-600">
-          LearnFlow AI
-        </h1>
+    <header className="bg-white border-b shadow-sm h-16 flex items-center justify-between px-8">
+
+      <div className="flex items-center gap-3">
+
+        <Search className="text-gray-500" size={20} />
+
+        <input
+          type="text"
+          placeholder="Search PDFs, Chats..."
+          className="outline-none border rounded-lg px-3 py-2 w-80 focus:border-blue-500"
+        />
+
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-6">
 
         <button className="relative">
-          <Bell className="w-6 h-6 text-gray-600 hover:text-blue-600 transition" />
 
-          <span className="absolute -top-1 -right-1 bg-red-500 rounded-full w-2 h-2"></span>
+          <Bell size={22} className="text-gray-600 hover:text-blue-600"/>
+
+          <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
+
         </button>
 
-        <button>
-          <UserCircle className="w-9 h-9 text-gray-700 hover:text-blue-600 transition" />
-        </button>
+        <div className="flex items-center gap-2">
+
+          <UserCircle size={35}/>
+
+          <div>
+
+            <h2 className="font-semibold">
+              User
+            </h2>
+
+            <p className="text-sm text-gray-500">
+              Student
+            </p>
+
+          </div>
+
+        </div>
 
       </div>
-    </nav>
+
+    </header>
   );
 };
 

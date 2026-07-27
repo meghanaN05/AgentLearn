@@ -1,14 +1,20 @@
+import type { ReactNode } from "react";
+
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+
 import Loader from "./Loader";
 
+import { useAuth } from "../../context/AuthContext";
+
 interface Props{
-    children: JSX.Element;
+
+    children:ReactNode;
+
 }
 
-const ProtectedRoute = ({children}:Props) => {
+const ProtectedRoute = ({children}:Props)=>{
 
-    const {user, loading} = useAuth();
+    const {user,loading}=useAuth();
 
     if(loading){
 
@@ -24,6 +30,6 @@ const ProtectedRoute = ({children}:Props) => {
 
     return children;
 
-};
+}
 
 export default ProtectedRoute;
