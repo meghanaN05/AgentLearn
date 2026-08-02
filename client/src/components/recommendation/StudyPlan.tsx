@@ -1,5 +1,5 @@
 interface StudyTask {
-  id: number;
+  id: string;
   topic: string;
   duration: string;
   completed: boolean;
@@ -7,13 +7,16 @@ interface StudyTask {
 
 interface StudyPlanProps {
   tasks: StudyTask[];
+  /** Makes each row open a chat about that topic. */
+  onSelectTopic?: (topic: string) => void;
 }
 
 const StudyPlan = ({
   tasks,
+  onSelectTopic,
 }: StudyPlanProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
 
       <h2 className="text-2xl font-bold mb-6">
         Today's Study Plan
@@ -25,20 +28,25 @@ const StudyPlan = ({
 
           <div
             key={task.id}
-            className="flex justify-between items-center border rounded-lg p-4"
+            className="flex justify-between items-center border dark:border-gray-700 rounded-lg p-4"
           >
 
-            <div>
+            <button
+              type="button"
+              disabled={!onSelectTopic}
+              onClick={() => onSelectTopic?.(task.topic)}
+              className="text-left enabled:hover:text-blue-600 disabled:cursor-default"
+            >
 
               <h3 className="font-semibold">
                 {task.topic}
               </h3>
 
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
                 {task.duration}
               </p>
 
-            </div>
+            </button>
 
             <span
               className={`px-3 py-1 rounded-full text-sm ${

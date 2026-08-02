@@ -30,13 +30,13 @@ const Timer = ({
   const secs = timeLeft % 60;
 
   return (
-    <div className="bg-red-50 border border-red-300 rounded-lg px-5 py-3 inline-block">
+    <div className="bg-red-50 dark:bg-red-950 border border-red-300 dark:border-red-800 rounded-lg px-5 py-3 inline-block">
 
-      <h3 className="font-semibold text-red-700">
+      <h3 className="font-semibold text-red-700 dark:text-red-300 text-sm">
         Time Left
       </h3>
 
-      <p className="text-3xl font-bold text-red-600">
+      <p className="text-3xl font-bold text-red-600 dark:text-red-400 tabular-nums">
         {String(mins).padStart(2, "0")}:
         {String(secs).padStart(2, "0")}
       </p>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import Layout from "../components/common/Layout";
@@ -14,6 +15,9 @@ const Summary = () => {
   const [loading, setLoading] = useState(false);
   const [pdfs, setPdfs] = useState<PDFResponse[]>([]);
   const [selectedPdfId, setSelectedPdfId] = useState("");
+  // Set when arriving from a recommendation, e.g. /summary?topic=Deadlocks
+  const [searchParams] = useSearchParams();
+  const topic = searchParams.get("topic") ?? "";
 
   useEffect(() => {
     const loadPDFs = async () => {
@@ -45,6 +49,7 @@ const Summary = () => {
       const response = await summaryService.generateSummary({
         pdfId: selectedPdfId,
         summaryType: summaryType as "short" | "medium" | "detailed",
+        topic: topic || undefined,
       });
       setSummary(response.summary);
       toast.success("Summary generated");
@@ -55,20 +60,39 @@ const Summary = () => {
     }
   };
 
+  const handleDownload = () => {
+    const blob = new Blob([summary], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "summary.md";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Layout>
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold">
-          AI Summary
-        </h1>
+        <div>
+          <h1 className="text-3xl font-bold">
+            AI Summary
+          </h1>
+          {topic && (
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Focused on <span className="font-medium">{topic}</span>
+            </p>
+          )}
+        </div>
 
         {pdfs.length === 0 ? (
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Upload a PDF from the Upload page to generate summaries.
           </p>
         ) : (
           <>
-            <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <label className="block mb-2 font-medium">
                 Select Document
               </label>
@@ -98,7 +122,12 @@ const Summary = () => {
         {summary && !loading && (
           <>
             <SummaryViewer summary={summary} />
-            <SummaryCard title="Latest Summary" preview={summary.slice(0, 200)} />
+            <SummaryCard
+              title="Latest Summary"
+              createdAt={new Date().toLocaleString()}
+              words={summary.trim().split(/\s+/).length}
+              onDownload={handleDownload}
+            />
           </>
         )}
       </div>

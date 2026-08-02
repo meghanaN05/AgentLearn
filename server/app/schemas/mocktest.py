@@ -26,6 +26,20 @@ class SubmitMockTestRequest(BaseModel):
     timeTakenSeconds: int = 0
 
 
+class MockTestAttemptOut(BaseModel):
+    id: str
+    testId: str
+    score: float
+    totalQuestions: int
+    correctAnswers: int
+    wrongAnswers: int
+    accuracy: float
+    timeTakenSeconds: int
+    weakTopics: list[str] = []
+    strongTopics: list[str] = []
+    submittedAt: str
+
+
 class SubmitMockTestResponse(BaseModel):
     score: float
     totalQuestions: int

@@ -1,4 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field
+from typing import Annotated
+
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
 
 
 class UserCreate(BaseModel):
@@ -10,6 +12,14 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+class UserUpdate(BaseModel):
+    name: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=2, max_length=255)
+    ] | None = None
+    password: str | None = Field(default=None, min_length=6, max_length=128)
+    currentPassword: str | None = None
 
 
 class UserOut(BaseModel):

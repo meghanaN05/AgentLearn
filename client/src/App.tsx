@@ -4,6 +4,12 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ChatProvider } from "./context/ChatContext";
 import AppRoutes from "./routes/AppRoutes";
+import { useSmoothScroll } from "./lib/useSmoothScroll";
+
+const SmoothScroll = ({ children }: { children: React.ReactNode }) => {
+  useSmoothScroll();
+  return <>{children}</>;
+};
 
 function App() {
   return (
@@ -11,7 +17,9 @@ function App() {
       <AuthProvider>
         <ChatProvider>
           <BrowserRouter>
-            <AppRoutes />
+            <SmoothScroll>
+              <AppRoutes />
+            </SmoothScroll>
           </BrowserRouter>
         </ChatProvider>
       </AuthProvider>

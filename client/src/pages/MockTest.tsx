@@ -22,6 +22,7 @@ const MockTest = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [duration, setDuration] = useState(30);
+  const [startedAt, setStartedAt] = useState(0);
   const [result, setResult] = useState({
     total: 0,
     correct: 0,
@@ -64,6 +65,7 @@ const MockTest = () => {
       setTestId(response.testId);
       setQuestions(response.questions);
       setDuration(testDuration);
+      setStartedAt(Date.now());
       setStarted(true);
       setCurrentIndex(0);
       setAnswers({});
@@ -75,10 +77,16 @@ const MockTest = () => {
     }
   };
 
-  const submitTest = async (timeTaken: number) => {
+  const submitTest = async () => {
     if (!testId) {
       return;
     }
+
+    // Measured from the real clock so a manual submit records actual elapsed
+    // time rather than the allotted duration (or zero).
+    const elapsedSeconds = startedAt
+      ? Math.max(0, Math.round((Date.now() - startedAt) / 1000))
+      : 0;
 
     try {
       setSubmitting(true);
@@ -88,13 +96,13 @@ const MockTest = () => {
           questionId,
           selectedOption,
         })),
-        timeTakenSeconds: timeTaken * 60,
+        timeTakenSeconds: elapsedSeconds,
       });
 
       setResult({
         total: response.totalQuestions,
         correct: response.correctAnswers,
-        timeTaken,
+        timeTaken: Math.round(elapsedSeconds / 60),
       });
       setFinished(true);
     } catch {
@@ -116,7 +124,7 @@ const MockTest = () => {
         {!started && (
           <>
             {pdfs.length > 0 && (
-              <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                 <label className="block mb-2 font-medium">
                   Select Document
                 </label>
@@ -148,14 +156,16 @@ const MockTest = () => {
           <>
             <Timer
               minutes={duration}
-              onComplete={() => submitTest(duration)}
+              onComplete={() => submitTest()}
             />
 
             <QuestionCard
               questionNumber={currentIndex + 1}
+              totalQuestions={questions.length}
               question={currentQuestion.question}
               options={currentQuestion.options}
-              onAnswer={(selected) => {
+              selected={answers[currentQuestion.id] ?? null}
+              onSelect={(selected) => {
                 setAnswers((prev) => ({
                   ...prev,
                   [currentQuestion.id]: selected,
@@ -186,7 +196,7 @@ const MockTest = () => {
                   type="button"
                   className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
                   disabled={submitting}
-                  onClick={() => submitTest(0)}
+                  onClick={() => submitTest()}
                 >
                   {submitting ? "Submitting..." : "Submit Test"}
                 </button>

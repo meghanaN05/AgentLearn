@@ -22,7 +22,7 @@ const ResultCard = ({
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
 
       <Trophy
         size={70}
@@ -46,7 +46,7 @@ const ResultCard = ({
             {correct}/{total}
           </p>
 
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Correct Answers
           </p>
 
@@ -63,7 +63,7 @@ const ResultCard = ({
             {timeTaken} min
           </p>
 
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Time Taken
           </p>
 
@@ -80,7 +80,7 @@ const ResultCard = ({
             {percentage}%
           </p>
 
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Accuracy
           </p>
 

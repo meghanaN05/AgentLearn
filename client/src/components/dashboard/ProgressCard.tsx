@@ -10,7 +10,7 @@ const ProgressCard = ({
   color = "bg-blue-600",
 }: ProgressCardProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
 
       <div className="flex justify-between mb-3">
 

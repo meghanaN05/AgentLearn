@@ -4,12 +4,35 @@ export interface AnalyticsResponse {
   totalPDFs: number;
   totalChats: number;
   totalTests: number;
+  questionsAsked: number;
+  summariesGenerated: number;
+  mcqsGenerated: number;
   averageScore: number;
+  /** Measured mock-test time only. Reading and chat time are not instrumented. */
   studyHours: number;
+  activeDays: number;
+  learningStreak: number;
 
   topicPerformance: {
     topic: string;
     score: number;
+    attempted: number;
+  }[];
+
+  weakTopics: string[];
+  strongTopics: string[];
+
+  scoreHistory: {
+    label: string;
+    score: number;
+    submittedAt: string;
+  }[];
+
+  dailyActivity: {
+    day: string;
+    date: string;
+    minutes: number;
+    activities: number;
   }[];
 
   weeklyProgress: {

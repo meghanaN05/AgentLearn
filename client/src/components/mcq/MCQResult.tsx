@@ -20,7 +20,7 @@ const MCQResult = ({
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
 
       <Trophy
         className="mx-auto text-yellow-500 mb-4"
@@ -44,7 +44,7 @@ const MCQResult = ({
             {correct}
           </p>
 
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Correct
           </p>
 
@@ -61,7 +61,7 @@ const MCQResult = ({
             {incorrect}
           </p>
 
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Incorrect
           </p>
 
@@ -73,7 +73,7 @@ const MCQResult = ({
             {percentage}%
           </h3>
 
-          <p className="text-gray-500 mt-2">
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
             Score
           </p>
 

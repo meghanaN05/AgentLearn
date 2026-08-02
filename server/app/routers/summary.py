@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -33,6 +31,9 @@ def _generate_summary(db: Session, current_user: User, payload: SummaryRequest) 
         document_id=payload.pdfId,
         task="summary",
         extra_instructions=instruction,
+        # No topic means "summarise the whole thing", which needs coverage of
+        # the document rather than the passages nearest a vague instruction.
+        whole_document=payload.topic is None,
     )
 
     summary = Summary(

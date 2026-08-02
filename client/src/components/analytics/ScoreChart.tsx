@@ -8,48 +8,50 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const data = [
-  { test: "T1", score: 68 },
-  { test: "T2", score: 75 },
-  { test: "T3", score: 82 },
-  { test: "T4", score: 91 },
-  { test: "T5", score: 87 },
-];
+interface Props {
+  data: { label: string; score: number }[];
+}
 
-const ScoreChart = () => {
+const ScoreChart = ({ data }: Props) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
 
       <h2 className="text-xl font-semibold mb-5">
         Test Scores
       </h2>
 
-      <div className="h-80">
+      {data.length === 0 ? (
+        <p className="text-gray-500 dark:text-gray-400 py-16 text-center">
+          Take a mock test to see your score trend.
+        </p>
+      ) : (
+        <div className="h-80">
 
-        <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%">
 
-          <LineChart data={data}>
+            <LineChart data={data}>
 
-            <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" />
 
-            <XAxis dataKey="test" />
+              <XAxis dataKey="label" />
 
-            <YAxis domain={[0, 100]} />
+              <YAxis domain={[0, 100]} />
 
-            <Tooltip />
+              <Tooltip />
 
-            <Line
-              type="monotone"
-              dataKey="score"
-              stroke="#2563EB"
-              strokeWidth={3}
-            />
+              <Line
+                type="monotone"
+                dataKey="score"
+                stroke="#2563EB"
+                strokeWidth={3}
+              />
 
-          </LineChart>
+            </LineChart>
 
-        </ResponsiveContainer>
+          </ResponsiveContainer>
 
-      </div>
+        </div>
+      )}
 
     </div>
   );

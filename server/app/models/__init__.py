@@ -56,6 +56,10 @@ class Document(Base):
     file_size: Mapped[int] = mapped_column(Integer, default=0)
     total_pages: Mapped[int] = mapped_column(Integer, default=0)
     processing_status: Mapped[str] = mapped_column(String(50), default="pending")
+    processing_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Which embedding model produced this document's vectors. If the configured
+    # model changes, the document needs re-indexing before it is retrievable.
+    embedding_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="documents")
@@ -90,7 +94,14 @@ class ChatSession(Base):
     )
 
     user = relationship("User", back_populates="chat_sessions")
-    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+    # Explicit ordering: conversation history is replayed to the LLM, so the
+    # sequence must be deterministic rather than whatever the DB returns.
+    messages = relationship(
+        "ChatMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="ChatMessage.created_at",
+    )
 
 
 class ChatMessage(Base):
@@ -128,7 +139,10 @@ class MCQSet(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True)
-    document_id: Mapped[str] = mapped_column(String(36), ForeignKey("documents.id"), index=True)
+    # Nullable so deleting a PDF does not destroy the learning history built from it.
+    document_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("documents.id"), index=True, nullable=True
+    )
     difficulty: Mapped[str] = mapped_column(String(20), nullable=False)
     questions: Mapped[list] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -141,7 +155,10 @@ class MockTest(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True)
-    document_id: Mapped[str] = mapped_column(String(36), ForeignKey("documents.id"), index=True)
+    # Nullable so deleting a PDF does not destroy past test results.
+    document_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("documents.id"), index=True, nullable=True
+    )
     difficulty: Mapped[str] = mapped_column(String(20), nullable=False)
     time_limit_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     questions: Mapped[list] = mapped_column(JSON, nullable=False)

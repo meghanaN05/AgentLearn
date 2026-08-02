@@ -18,7 +18,7 @@ const ProtectedRoute = ({children}:Props)=>{
 
     if(loading){
 
-        return <Loader/>
+        return <Loader fullScreen/>
 
     }
 

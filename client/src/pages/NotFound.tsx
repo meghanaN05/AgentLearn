@@ -15,7 +15,7 @@ const NotFound = () => {
           Page Not Found
         </p>
 
-        <p className="text-gray-500 mt-3">
+        <p className="text-gray-500 dark:text-gray-400 mt-3">
           The page you're looking for doesn't exist.
         </p>
 

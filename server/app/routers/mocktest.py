@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -10,12 +8,14 @@ from app.models import AnalyticsEvent, MockTest, MockTestAttempt, User
 from app.schemas.mocktest import (
     GenerateMockTestRequest,
     MockQuestion,
+    MockTestAttemptOut,
     MockTestResponse,
     SubmitMockTestRequest,
     SubmitMockTestResponse,
 )
 from app.services.document_service import document_service
 from app.services.llm_service import llm_service
+from app.services.question_parser import normalize_questions
 
 router = APIRouter(prefix="/mocktest", tags=["mocktest"])
 
@@ -40,19 +40,19 @@ def generate_mock_test(
         document_id=payload.pdfId,
         task="structured",
         extra_instructions=instructions,
+        whole_document=payload.topic is None,
     )
 
     try:
         parsed = llm_service.parse_json(result.answer)
-        raw_questions = parsed.get("questions", [])
+        # Same validation as the MCQ route: malformed or duplicate questions
+        # would otherwise be stored and skew topic accuracy after grading.
+        raw_questions = normalize_questions(parsed.get("questions", []))
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to parse mock test: {exc}") from exc
 
     if not raw_questions:
         raise HTTPException(status_code=500, detail="No mock test questions generated")
-
-    for item in raw_questions:
-        item["id"] = item.get("id") or str(uuid.uuid4())
 
     mock_test = MockTest(
         user_id=current_user.id,
@@ -81,6 +81,40 @@ def generate_mock_test(
         for item in raw_questions
     ]
     return MockTestResponse(testId=mock_test.id, questions=public_questions)
+
+
+@router.get("/attempts", response_model=list[MockTestAttemptOut])
+def list_attempts(
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Mock test history, newest first. Declared before /{test_id} so the
+    literal path is not swallowed by the parameterised route."""
+    attempts = (
+        db.query(MockTestAttempt)
+        .filter(MockTestAttempt.user_id == current_user.id)
+        .order_by(MockTestAttempt.submitted_at.desc())
+        .limit(max(1, min(limit, 100)))
+        .all()
+    )
+
+    return [
+        MockTestAttemptOut(
+            id=attempt.id,
+            testId=attempt.mock_test_id,
+            score=attempt.score,
+            totalQuestions=attempt.total_questions,
+            correctAnswers=attempt.correct_answers,
+            wrongAnswers=attempt.wrong_answers,
+            accuracy=attempt.accuracy,
+            timeTakenSeconds=attempt.time_taken_seconds,
+            weakTopics=attempt.weak_topics or [],
+            strongTopics=attempt.strong_topics or [],
+            submittedAt=attempt.submitted_at.isoformat(),
+        )
+        for attempt in attempts
+    ]
 
 
 @router.get("/{test_id}", response_model=MockTestResponse)

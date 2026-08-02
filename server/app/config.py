@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 7
     algorithm: str = "HS256"
 
+    # Host port 5432 matches docker-compose, which avoids a local Postgres on 5432.
     database_url: str = "postgresql://agentlearn:agentlearn@localhost:5432/agentlearn"
 
     upload_dir: str = "./uploads"
@@ -26,9 +27,23 @@ class Settings(BaseSettings):
     use_local_embeddings: bool = False
     local_embedding_model: str = "BAAI/bge-small-en-v1.5"
 
+    chunk_size: int = 800
+    chunk_overlap: int = 150
+
     chroma_persist_dir: str = "./chroma_data"
     retrieval_top_k: int = 5
-    retrieval_confidence_threshold: float = 0.65
+    # Similarity fallback threshold, only used when no LLM is configured.
+    # Cosine ranges differ per embedding model: text-embedding-3-small puts good
+    # matches near 0.55, so a value tuned for a local model will reject everything.
+    retrieval_confidence_threshold: float = 0.50
+    # Below this score a chunk is dropped before it ever reaches the LLM.
+    retrieval_min_score: float = 0.15
+    # How much of each chunk the retrieval evaluator sees. Chunks run to several
+    # thousand characters, so a short prefix makes it judge the wrong text.
+    evaluator_chunk_chars: int = 2000
+    evaluator_max_chunks: int = 4
+    # Chunks sampled across a document for whole-document summaries and question sets.
+    coverage_chunk_limit: int = 8
 
     tavily_api_key: str = ""
     enable_external_search: bool = True

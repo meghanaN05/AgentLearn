@@ -19,7 +19,7 @@ const Modal = ({
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
 
-      <div className="bg-white rounded-xl shadow-lg w-[600px]">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-[600px]">
 
         <div className="flex justify-between items-center border-b p-5">
 

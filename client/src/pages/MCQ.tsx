@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import Layout from "../components/common/Layout";
@@ -7,15 +8,21 @@ import MCQCard from "../components/mcq/MCQCard";
 import MCQResult from "../components/mcq/MCQResult";
 import Loader from "../components/common/Loader";
 import pdfService, { PDFResponse } from "../services/pdfService";
-import mcqService, { MCQ } from "../services/mcqService";
+import mcqService, { MCQ, SubmitMCQResponse } from "../services/mcqService";
 
 const MCQPage = () => {
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [score, setScore] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [questions, setQuestions] = useState<MCQ[]>([]);
+  const [setId, setSetId] = useState("");
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [graded, setGraded] = useState<SubmitMCQResponse | null>(null);
   const [pdfs, setPdfs] = useState<PDFResponse[]>([]);
   const [selectedPdfId, setSelectedPdfId] = useState("");
+  // Set when arriving from a recommendation, e.g. /mcq?topic=Deadlocks
+  const [searchParams] = useSearchParams();
+  const topic = searchParams.get("topic") ?? "";
 
   useEffect(() => {
     const loadPDFs = async () => {
@@ -41,13 +48,16 @@ const MCQPage = () => {
 
     try {
       setLoading(true);
-      setScore(0);
+      setGraded(null);
+      setAnswers({});
       const response = await mcqService.generateMCQs({
         pdfId: selectedPdfId,
         numberOfQuestions,
         difficulty: difficulty.toLowerCase() as "easy" | "medium" | "hard",
+        topic: topic || undefined,
       });
       setQuestions(response.questions);
+      setSetId(response.setId);
       setGenerated(true);
       toast.success("MCQs generated");
     } catch {
@@ -57,17 +67,45 @@ const MCQPage = () => {
     }
   };
 
+  // Grading happens server-side: the answer key is never sent to the browser
+  // until the set is submitted.
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      const response = await mcqService.submitMCQs({
+        setId,
+        answers: Object.entries(answers).map(([questionId, selectedOption]) => ({
+          questionId,
+          selectedOption,
+        })),
+      });
+      setGraded(response);
+      toast.success(`Scored ${response.score}%`);
+    } catch {
+      toast.error("Failed to submit answers");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold">
-          Generate MCQs
-        </h1>
+        <div>
+          <h1 className="text-3xl font-bold">
+            Generate MCQs
+          </h1>
+          {topic && (
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Focused on <span className="font-medium">{topic}</span>
+            </p>
+          )}
+        </div>
 
         {!generated && (
           <>
             {pdfs.length > 0 && (
-              <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                 <label className="block mb-2 font-medium">
                   Select Document
                 </label>
@@ -97,22 +135,46 @@ const MCQPage = () => {
 
         {generated && !loading && (
           <>
-            {questions.map((mcq, index) => (
-              <MCQCard
-                key={mcq.id}
-                questionNumber={index + 1}
-                question={mcq.question}
-                options={mcq.options}
-                correctAnswer={mcq.correctAnswer ?? 0}
-                onAnswer={(_, correct) => {
-                  if (correct) {
-                    setScore((prev) => prev + 1);
-                  }
-                }}
-              />
-            ))}
+            {questions.map((mcq, index) => {
+              const result = graded?.results.find(
+                (item) => item.questionId === mcq.id
+              );
 
-            <MCQResult total={questions.length} correct={score} />
+              return (
+                <MCQCard
+                  key={mcq.id}
+                  questionNumber={index + 1}
+                  question={mcq.question}
+                  options={mcq.options}
+                  selected={answers[mcq.id] ?? null}
+                  onSelect={(index) =>
+                    setAnswers((prev) => ({ ...prev, [mcq.id]: index }))
+                  }
+                  revealed={
+                    result
+                      ? {
+                          correctAnswer: result.correctAnswer,
+                          isCorrect: result.isCorrect,
+                          explanation: result.explanation,
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
+
+            {graded ? (
+              <MCQResult total={graded.total} correct={graded.correctAnswers} />
+            ) : (
+              <button
+                type="button"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
+                disabled={submitting || Object.keys(answers).length === 0}
+                onClick={handleSubmit}
+              >
+                {submitting ? "Submitting..." : "Submit Answers"}
+              </button>
+            )}
           </>
         )}
       </div>

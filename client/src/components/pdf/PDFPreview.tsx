@@ -14,7 +14,7 @@ const PDFPreview = ({ file }: Props) => {
   const [pages, setPages] = useState(0);
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
 
       <Document
         file={file}

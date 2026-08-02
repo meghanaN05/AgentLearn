@@ -11,14 +11,27 @@ export interface SignupRequest {
   password: string;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface AuthResponse {
   access_token: string;
   token_type: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  user: User;
+}
+
+export interface ProfileResponse {
+  user: User;
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  /** Required alongside `password` — the server re-authenticates before changing it. */
+  currentPassword?: string;
+  password?: string;
 }
 
 class AuthService {
@@ -55,7 +68,13 @@ class AuthService {
   }
 
   async getProfile() {
-    const response = await api.get("/auth/profile");
+    const response = await api.get<ProfileResponse>("/auth/profile");
+
+    return response.data;
+  }
+
+  async updateProfile(data: UpdateProfileRequest) {
+    const response = await api.patch<ProfileResponse>("/auth/profile", data);
 
     return response.data;
   }

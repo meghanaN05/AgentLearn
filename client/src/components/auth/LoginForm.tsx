@@ -37,7 +37,7 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white shadow-lg rounded-xl p-8">
+    <div className="max-w-md mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-xl p-8">
 
       <h2 className="text-3xl font-bold text-center mb-6">
         Login

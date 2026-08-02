@@ -37,7 +37,15 @@ external_search_service = ExternalSearchService()
 
 
 class RetrievalEvaluator:
+    """Agent 2 — decides whether retrieved chunks can answer the query."""
+
     def evaluate(self, query: str, chunks: list[RetrievedChunk]) -> tuple[str, float]:
+        """Similarity-only fallback, used when no LLM is configured.
+
+        Absolute cosine values are model-dependent: text-embedding-3-small puts
+        good matches near 0.55 while normalised local models score far higher.
+        The threshold therefore lives in config and must be tuned per model.
+        """
         if not chunks:
             return "not_relevant", 0.0
 
@@ -55,13 +63,23 @@ class RetrievalEvaluator:
         if not llm_service.is_available or not chunks:
             return heuristic_label, heuristic_score
 
-        context = "\n\n".join(chunk.content[:400] for chunk in chunks[:3])
-        system_prompt = (
-            "You evaluate whether retrieved document chunks can answer a user query. "
-            "Respond in JSON with keys: relevance (relevant|partially_relevant|not_relevant), "
-            "confidence (0-1 float)."
+        # Chunks run to several thousand characters. Judging a short prefix
+        # rates the wrong text -- the answer often sits past the cut -- so send
+        # a substantial slice of each of the top chunks.
+        context = "\n\n---\n\n".join(
+            f"[chunk {index + 1}, page {chunk.page_number}]\n"
+            f"{chunk.content[: settings.evaluator_chunk_chars]}"
+            for index, chunk in enumerate(chunks[: settings.evaluator_max_chunks])
         )
-        user_prompt = f"Query: {query}\n\nRetrieved context:\n{context}"
+        system_prompt = (
+            "You judge whether retrieved document excerpts contain enough information "
+            "to answer a user's question. The excerpts may be truncated mid-sentence and "
+            "may include unrelated surrounding text; judge only whether the relevant facts "
+            "are present somewhere in them. Reply with JSON: relevance "
+            "(relevant|partially_relevant|not_relevant) and confidence (0-1 float) "
+            "expressing how sure you are of that judgement."
+        )
+        user_prompt = f"Question: {query}\n\nRetrieved excerpts:\n{context}"
         content, _ = llm_service.generate(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
@@ -70,11 +88,27 @@ class RetrievalEvaluator:
         )
         try:
             parsed = llm_service.parse_json(content)
-            return parsed.get("relevance", heuristic_label), float(
-                parsed.get("confidence", heuristic_score)
-            )
+            label = parsed.get("relevance", heuristic_label)
+            if label not in ("relevant", "partially_relevant", "not_relevant"):
+                label = heuristic_label
+            return label, float(parsed.get("confidence", heuristic_score))
         except Exception:
             return heuristic_label, heuristic_score
+
+    @staticmethod
+    def should_search_externally(relevance: str, confidence: float, has_llm: bool) -> bool:
+        """Whether Agent 3 should run.
+
+        When an LLM produced the verdict, trust its label: its confidence is a
+        self-assessment, not a similarity score, so comparing it against the
+        cosine threshold would mix two unrelated scales and fire a web search
+        on nearly every query.
+        """
+        if relevance == "not_relevant":
+            return True
+        if has_llm:
+            return relevance == "partially_relevant" and confidence < 0.4
+        return confidence < settings.retrieval_confidence_threshold
 
 
 retrieval_evaluator = RetrievalEvaluator()
