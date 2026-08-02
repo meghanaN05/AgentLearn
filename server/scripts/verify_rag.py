@@ -179,6 +179,38 @@ check("one unanswered", graded["unanswered"] == 1, str(graded["unanswered"]))
 check("skipping does not inflate score", graded["score"] == 50.0, str(graded["score"]))
 check("explanations revealed after submit", any(g["explanation"] for g in graded["results"]))
 
+# --- Chat sessions: rename and isolation ------------------------------
+sessions = client.get("/api/chat/sessions", headers=H).json()
+check("session listed", len(sessions) == 1, str(len(sessions)))
+original_title = sessions[0]["title"]
+
+r = client.patch(
+    f"/api/chat/sessions/{sessions[0]['id']}",
+    headers=H,
+    json={"title": "Traversal revision"},
+)
+check("rename chat 200", r.status_code == 200, r.text[:160])
+check("title updated", r.json()["title"] == "Traversal revision", r.json()["title"])
+check("rename actually persisted",
+      client.get("/api/chat/sessions", headers=H).json()[0]["title"] == "Traversal revision",
+      original_title)
+
+# A second user must not be able to rename someone else's chat.
+r = client.post(
+    "/api/auth/register",
+    json={"name": "Other", "email": f"other{stamp}@example.com", "password": "secret123"},
+)
+OTHER = {"Authorization": f"Bearer {r.json()['access_token']}"}
+r = client.patch(
+    f"/api/chat/sessions/{sessions[0]['id']}", headers=OTHER, json={"title": "hijacked"}
+)
+check("cannot rename another user's chat", r.status_code == 404, str(r.status_code))
+
+r = client.patch(
+    f"/api/chat/sessions/{sessions[0]['id']}", headers=H, json={"title": "   "}
+)
+check("blank title rejected", r.status_code == 422, str(r.status_code))
+
 # --- Summary ----------------------------------------------------------
 r = client.post(
     "/api/summary", headers=H, json={"pdfId": doc_id, "summaryType": "short"}

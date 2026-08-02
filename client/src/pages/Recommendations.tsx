@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { RefreshCw } from "lucide-react";
 
@@ -24,6 +25,7 @@ const Recommendations = () => {
   >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const navigate = useNavigate();
 
   const loadWeakTopics = useCallback(async () => {
     try {
@@ -45,6 +47,21 @@ const Recommendations = () => {
       .catch(() => toast.error("Could not load recommendations"))
       .finally(() => setLoading(false));
   }, [loadWeakTopics]);
+
+  // Each action routes to the feature that already accepts a topic, so a
+  // recommendation leads somewhere concrete instead of being a dead card.
+  const askAbout = (topic: string) =>
+    navigate(
+      `/chat?q=${encodeURIComponent(
+        `Explain ${topic} using my uploaded documents, with examples.`
+      )}`
+    );
+
+  const practise = (topic: string) =>
+    navigate(`/mcq?topic=${encodeURIComponent(topic)}`);
+
+  const summarise = (topic: string) =>
+    navigate(`/summary?topic=${encodeURIComponent(topic)}`);
 
   const handleRefresh = async () => {
     try {
@@ -117,11 +134,16 @@ const Recommendations = () => {
               description={item.description}
               category={item.topic}
               priority={asPriority(item.priority)}
+              onAsk={() => askAbout(item.topic)}
+              onPractise={() => practise(item.topic)}
+              onSummarise={() => summarise(item.topic)}
             />
           ))
         )}
 
-        {studyPlan.length > 0 && <StudyPlan tasks={studyPlan} />}
+        {studyPlan.length > 0 && (
+          <StudyPlan tasks={studyPlan} onSelectTopic={askAbout} />
+        )}
 
         {weakTopics.length > 0 && <WeakTopics topics={weakTopics} />}
 

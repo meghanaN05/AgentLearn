@@ -46,6 +46,15 @@ class ChatService {
     return response.data;
   }
 
+  async renameSession(sessionId: string, title: string) {
+    const response = await api.patch<ChatSessionSummary>(
+      `/chat/sessions/${sessionId}`,
+      { title }
+    );
+
+    return response.data;
+  }
+
   async getChatHistory(sessionId: string) {
     const response = await api.get<ChatMessageRecord[]>(
       `/chat/history/${sessionId}`

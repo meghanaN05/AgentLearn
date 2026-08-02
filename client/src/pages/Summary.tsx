@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import Layout from "../components/common/Layout";
@@ -14,6 +15,9 @@ const Summary = () => {
   const [loading, setLoading] = useState(false);
   const [pdfs, setPdfs] = useState<PDFResponse[]>([]);
   const [selectedPdfId, setSelectedPdfId] = useState("");
+  // Set when arriving from a recommendation, e.g. /summary?topic=Deadlocks
+  const [searchParams] = useSearchParams();
+  const topic = searchParams.get("topic") ?? "";
 
   useEffect(() => {
     const loadPDFs = async () => {
@@ -45,6 +49,7 @@ const Summary = () => {
       const response = await summaryService.generateSummary({
         pdfId: selectedPdfId,
         summaryType: summaryType as "short" | "medium" | "detailed",
+        topic: topic || undefined,
       });
       setSummary(response.summary);
       toast.success("Summary generated");
@@ -70,9 +75,16 @@ const Summary = () => {
   return (
     <Layout>
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold">
-          AI Summary
-        </h1>
+        <div>
+          <h1 className="text-3xl font-bold">
+            AI Summary
+          </h1>
+          {topic && (
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Focused on <span className="font-medium">{topic}</span>
+            </p>
+          )}
+        </div>
 
         {pdfs.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400">

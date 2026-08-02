@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from typing import Annotated
+
+from pydantic import BaseModel, Field, StringConstraints
 
 
 class ChatRequest(BaseModel):
@@ -19,6 +21,14 @@ class ChatMessageOut(BaseModel):
     role: str
     content: str
     created_at: str
+
+
+class ChatSessionRename(BaseModel):
+    # strip_whitespace runs before min_length, so a whitespace-only title is
+    # rejected rather than saved as an empty string.
+    title: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=512)
+    ]
 
 
 class ChatSessionOut(BaseModel):

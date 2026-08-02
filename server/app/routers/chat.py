@@ -8,7 +8,13 @@ from app.agents.orchestrator import agent_orchestrator
 from app.core.security import get_current_user
 from app.database import get_db
 from app.models import AnalyticsEvent, ChatMessage, ChatSession, User
-from app.schemas.chat import ChatMessageOut, ChatRequest, ChatResponse, ChatSessionOut
+from app.schemas.chat import (
+    ChatMessageOut,
+    ChatRequest,
+    ChatResponse,
+    ChatSessionOut,
+    ChatSessionRename,
+)
 from app.services.document_service import document_service
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -116,18 +122,33 @@ def list_chat_sessions(
 
     sessions = query.order_by(ChatSession.updated_at.desc()).all()
 
-    return [
-        ChatSessionOut(
-            id=session.id,
-            title=session.title,
-            documentId=session.document_id,
-            messageCount=len(session.messages),
-            lastMessage=session.messages[-1].content[:200] if session.messages else None,
-            createdAt=session.created_at.isoformat(),
-            updatedAt=session.updated_at.isoformat(),
-        )
-        for session in sessions
-    ]
+    return [_serialize_session(session) for session in sessions]
+
+
+def _serialize_session(session: ChatSession) -> ChatSessionOut:
+    return ChatSessionOut(
+        id=session.id,
+        title=session.title,
+        documentId=session.document_id,
+        messageCount=len(session.messages),
+        lastMessage=session.messages[-1].content[:200] if session.messages else None,
+        createdAt=session.created_at.isoformat(),
+        updatedAt=session.updated_at.isoformat(),
+    )
+
+
+@router.patch("/sessions/{session_id}", response_model=ChatSessionOut)
+def rename_chat_session(
+    session_id: str,
+    payload: ChatSessionRename,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    session = _get_owned_session(db, current_user.id, session_id)
+    session.title = payload.title.strip()
+    db.commit()
+    db.refresh(session)
+    return _serialize_session(session)
 
 
 @router.get("/history/{session_id}", response_model=list[ChatMessageOut])

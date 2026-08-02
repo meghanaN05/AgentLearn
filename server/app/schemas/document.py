@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, StringConstraints
 
 
 class DocumentOut(BaseModel):
@@ -20,4 +21,7 @@ class DocumentOut(BaseModel):
 
 
 class DocumentRename(BaseModel):
-    filename: str = Field(min_length=1, max_length=512)
+    # strip_whitespace runs before min_length, so " " cannot become an empty name.
+    filename: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=512)
+    ]

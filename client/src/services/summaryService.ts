@@ -3,10 +3,14 @@ import api from "./api";
 export interface SummaryRequest {
   pdfId: string;
   summaryType: "short" | "medium" | "detailed";
+  /** Omit to summarise the whole document; the server then samples chunks
+   *  across it rather than similarity-matching a vague instruction. */
+  topic?: string;
 }
 
 export interface SummaryResponse {
   summary: string;
+  id?: string | null;
 }
 
 class SummaryService {

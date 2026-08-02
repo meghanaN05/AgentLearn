@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import Layout from "../components/common/Layout";
@@ -19,6 +20,9 @@ const MCQPage = () => {
   const [graded, setGraded] = useState<SubmitMCQResponse | null>(null);
   const [pdfs, setPdfs] = useState<PDFResponse[]>([]);
   const [selectedPdfId, setSelectedPdfId] = useState("");
+  // Set when arriving from a recommendation, e.g. /mcq?topic=Deadlocks
+  const [searchParams] = useSearchParams();
+  const topic = searchParams.get("topic") ?? "";
 
   useEffect(() => {
     const loadPDFs = async () => {
@@ -50,6 +54,7 @@ const MCQPage = () => {
         pdfId: selectedPdfId,
         numberOfQuestions,
         difficulty: difficulty.toLowerCase() as "easy" | "medium" | "hard",
+        topic: topic || undefined,
       });
       setQuestions(response.questions);
       setSetId(response.setId);
@@ -86,9 +91,16 @@ const MCQPage = () => {
   return (
     <Layout>
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold">
-          Generate MCQs
-        </h1>
+        <div>
+          <h1 className="text-3xl font-bold">
+            Generate MCQs
+          </h1>
+          {topic && (
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Focused on <span className="font-medium">{topic}</span>
+            </p>
+          )}
+        </div>
 
         {!generated && (
           <>
