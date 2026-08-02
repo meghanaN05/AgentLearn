@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 7
     algorithm: str = "HS256"
 
-    # Host port 5433 matches docker-compose, which avoids a local Postgres on 5432.
-    database_url: str = "postgresql://agentlearn:agentlearn@localhost:5433/agentlearn"
+    # Host port 5432 matches docker-compose, which avoids a local Postgres on 5432.
+    database_url: str = "postgresql://agentlearn:agentlearn@localhost:5432/agentlearn"
 
     upload_dir: str = "./uploads"
     max_upload_size_mb: int = 20

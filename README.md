@@ -45,7 +45,7 @@ AgentLearn/
 docker compose up -d
 ```
 
-This publishes Postgres on **host port 5433** so it does not collide with a
+This publishes Postgres on **host port 5432** so it does not collide with a
 local Postgres install on 5432.
 
 ### 2. Backend
@@ -63,7 +63,7 @@ Edit `server/.env`:
 | Variable | Required | Purpose |
 |----------|----------|---------|
 | `OPENAI_API_KEY` | For AI features | Chat, summaries, MCQs, mock tests, recommendations. Without it those endpoints return **503**; upload, search, auth and analytics still work. |
-| `DATABASE_URL` | No | Defaults to `postgresql://agentlearn:agentlearn@localhost:5433/agentlearn`. |
+| `DATABASE_URL` | No | Defaults to `postgresql://agentlearn:agentlearn@localhost:5432/agentlearn`. |
 | `TAVILY_API_KEY` | No | Enables the External Search Agent. Without it that agent no-ops and answers rely on your documents only. |
 | `USE_LOCAL_EMBEDDINGS` | No | `true` uses Sentence Transformers (`BAAI/bge-small-en-v1.5`) instead of OpenAI. Also the automatic fallback when no OpenAI key is set — the first run downloads ~130 MB. |
 | `SECRET_KEY` | **Yes in production** | JWT signing key. The default is a well-known dev value. |
