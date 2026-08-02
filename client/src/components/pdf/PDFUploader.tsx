@@ -30,8 +30,8 @@ const PDFUploader = ({ onFilesSelected, disabled = false }: Props) => {
           : "cursor-pointer"
       } ${
         isDragActive
-          ? "border-blue-600 bg-blue-50"
-          : "border-gray-300 hover:border-blue-500"
+          ? "border-blue-600 bg-blue-50 dark:bg-blue-950"
+          : "border-gray-300 dark:border-gray-600 hover:border-blue-500"
       }`}
     >
       <input {...getInputProps()} />

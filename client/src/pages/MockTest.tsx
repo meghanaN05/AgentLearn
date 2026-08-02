@@ -161,9 +161,11 @@ const MockTest = () => {
 
             <QuestionCard
               questionNumber={currentIndex + 1}
+              totalQuestions={questions.length}
               question={currentQuestion.question}
               options={currentQuestion.options}
-              onAnswer={(selected) => {
+              selected={answers[currentQuestion.id] ?? null}
+              onSelect={(selected) => {
                 setAnswers((prev) => ({
                   ...prev,
                   [currentQuestion.id]: selected,

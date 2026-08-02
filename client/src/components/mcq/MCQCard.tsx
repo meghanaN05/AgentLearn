@@ -31,27 +31,37 @@ const MCQCard = ({
 
         {options.map((option, index) => {
 
-          let classes =
-            "w-full text-left border rounded-lg p-3 transition ";
+          // Foreground is always set alongside background: a pale chip with
+          // inherited light-on-dark text is unreadable in dark mode.
+          let stateClasses =
+            "border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700";
 
           if (revealed) {
-            if (index === revealed.correctAnswer)
-              classes += "bg-green-100 border-green-600";
-            else if (index === selected)
-              classes += "bg-red-100 border-red-600";
+            if (index === revealed.correctAnswer) {
+              stateClasses = "bg-green-600 border-green-600 text-white";
+            } else if (index === selected) {
+              stateClasses = "bg-red-600 border-red-600 text-white";
+            } else {
+              stateClasses =
+                "border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400";
+            }
           } else if (index === selected) {
-            classes += "bg-blue-50 border-blue-600";
+            stateClasses = "bg-blue-600 border-blue-600 text-white";
           }
 
           return (
             <button
               key={index}
               type="button"
+              aria-pressed={index === selected}
               disabled={Boolean(revealed)}
               onClick={() => onSelect(index)}
-              className={classes}
+              className={`w-full text-left border rounded-lg p-3 transition-colors disabled:cursor-default ${stateClasses}`}
             >
-              {String.fromCharCode(65 + index)}. {option}
+              <span className="font-medium mr-1">
+                {String.fromCharCode(65 + index)}.
+              </span>
+              {option}
             </button>
           );
         })}
