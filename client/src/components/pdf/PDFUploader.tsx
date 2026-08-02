@@ -45,7 +45,7 @@ const PDFUploader = ({ onFilesSelected, disabled = false }: Props) => {
         Drag & Drop PDF Files
       </h2>
 
-      <p className="text-gray-500 mt-2">
+      <p className="text-gray-500 dark:text-gray-400 mt-2">
         {disabled ? "Processing upload..." : "or click here to browse"}
       </p>
     </div>

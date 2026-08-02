@@ -23,7 +23,7 @@ const MockTestForm = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 space-y-5">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-5">
 
       <h2 className="text-2xl font-bold">
         Configure Mock Test

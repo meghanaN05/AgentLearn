@@ -13,6 +13,7 @@ import Result from "../pages/Result";
 import Analytics from "../pages/Analytics";
 import Recommendations from "../pages/Recommendations";
 import Profile from "../pages/Profile";
+import Settings from "../pages/Settings";
 import NotFound from "../pages/NotFound";
 
 import useAuth from "../hooks/useAuth";
@@ -143,6 +144,15 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         }
       />

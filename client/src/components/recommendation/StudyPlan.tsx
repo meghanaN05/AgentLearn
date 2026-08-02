@@ -1,5 +1,5 @@
 interface StudyTask {
-  id: number;
+  id: string;
   topic: string;
   duration: string;
   completed: boolean;
@@ -13,7 +13,7 @@ const StudyPlan = ({
   tasks,
 }: StudyPlanProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
 
       <h2 className="text-2xl font-bold mb-6">
         Today's Study Plan
@@ -34,7 +34,7 @@ const StudyPlan = ({
                 {task.topic}
               </h3>
 
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 dark:text-gray-400 text-sm">
                 {task.duration}
               </p>
 

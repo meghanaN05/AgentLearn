@@ -21,7 +21,7 @@ const MCQCard = ({
   revealed,
 }: MCQCardProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
 
       <h2 className="font-semibold text-lg mb-4">
         Q{questionNumber}. {question}
@@ -64,7 +64,7 @@ const MCQCard = ({
             <p className="text-amber-700 font-medium">Not answered</p>
           )}
           {revealed.explanation && (
-            <p className="text-gray-600 mt-1">{revealed.explanation}</p>
+            <p className="text-gray-600 dark:text-gray-300 mt-1">{revealed.explanation}</p>
           )}
         </div>
       )}

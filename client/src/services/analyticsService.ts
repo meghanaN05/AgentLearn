@@ -22,6 +22,19 @@ export interface AnalyticsResponse {
   weakTopics: string[];
   strongTopics: string[];
 
+  scoreHistory: {
+    label: string;
+    score: number;
+    submittedAt: string;
+  }[];
+
+  dailyActivity: {
+    day: string;
+    date: string;
+    minutes: number;
+    activities: number;
+  }[];
+
   weeklyProgress: {
     week: string;
     score: number;

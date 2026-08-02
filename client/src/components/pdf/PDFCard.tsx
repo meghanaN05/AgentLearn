@@ -20,7 +20,7 @@ const PDFCard = ({
   onRename,
 }: Props) => {
   return (
-    <div className="bg-white shadow-md rounded-xl p-5 flex justify-between items-center">
+    <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-5 flex justify-between items-center">
 
       <div className="flex gap-4">
 
@@ -35,11 +35,11 @@ const PDFCard = ({
             {fileName}
           </h3>
 
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             {pages} Pages
           </p>
 
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             {size} · {status}
           </p>
 
@@ -52,7 +52,7 @@ const PDFCard = ({
         {onRename && (
           <button
             type="button"
-            className="text-gray-600"
+            className="text-gray-600 dark:text-gray-300"
             onClick={onRename}
             aria-label={`Rename ${fileName}`}
           >

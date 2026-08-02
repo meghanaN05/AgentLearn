@@ -69,7 +69,7 @@ const Profile = () => {
 
       <div className="max-w-5xl mx-auto space-y-8">
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
 
           <div className="flex items-center gap-6">
 
@@ -83,7 +83,7 @@ const Profile = () => {
                 {user?.name ?? "Your profile"}
               </h2>
 
-              <p className="text-gray-500 flex items-center gap-2 mt-1">
+              <p className="text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-1">
                 <Mail size={18} />
                 {user?.email}
               </p>
@@ -98,7 +98,7 @@ const Profile = () => {
 
           <form
             onSubmit={handleSave}
-            className="bg-white rounded-xl shadow-lg p-6 space-y-4"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 space-y-4"
           >
 
             <h3 className="font-semibold text-xl mb-1">
@@ -158,7 +158,7 @@ const Profile = () => {
 
           </form>
 
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
 
             <h3 className="font-semibold text-xl mb-5">
               Learning Statistics

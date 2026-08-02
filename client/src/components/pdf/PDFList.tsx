@@ -60,7 +60,7 @@ const PDFList = () => {
   return (
     <div className="space-y-5">
 
-      <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+      <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white dark:bg-gray-800">
         <Search size={18} className="text-gray-400" />
         <input
           className="w-full outline-none"
@@ -77,7 +77,7 @@ const PDFList = () => {
       )}
 
       {!loading && pdfs.length === 0 && (
-        <p className="text-gray-500 text-center py-8">
+        <p className="text-gray-500 dark:text-gray-400 text-center py-8">
           {debouncedSearch
             ? `No documents match "${debouncedSearch}".`
             : "No PDFs uploaded yet. Drop files above to get started."}

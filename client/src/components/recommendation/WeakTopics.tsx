@@ -11,7 +11,7 @@ const WeakTopics = ({
   topics,
 }: WeakTopicsProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
 
       <h2 className="text-2xl font-bold mb-6">
         Weak Topics

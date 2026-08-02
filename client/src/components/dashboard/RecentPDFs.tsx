@@ -23,7 +23,7 @@ const RecentPDFs = () => {
   }, []);
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
       <h2 className="text-xl font-semibold mb-4">
         Recent PDFs
       </h2>
@@ -31,7 +31,7 @@ const RecentPDFs = () => {
       {loading ? (
         <Loader />
       ) : pdfs.length === 0 ? (
-        <p className="text-gray-500 text-sm">No PDFs uploaded yet.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">No PDFs uploaded yet.</p>
       ) : (
         <div className="space-y-3">
           {pdfs.map((pdf) => (

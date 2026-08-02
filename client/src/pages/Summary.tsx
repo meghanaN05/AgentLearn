@@ -75,12 +75,12 @@ const Summary = () => {
         </h1>
 
         {pdfs.length === 0 ? (
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             Upload a PDF from the Upload page to generate summaries.
           </p>
         ) : (
           <>
-            <div className="bg-white rounded-xl shadow-md p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
               <label className="block mb-2 font-medium">
                 Select Document
               </label>

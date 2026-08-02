@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Tailwind v4 resolves `dark:` from prefers-color-scheme by default. The app
+   toggles a .dark class on <html>, so the variant is redefined to match it. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 html,
 body,
 #root {
@@ -17,6 +21,34 @@ body {
   background: #f8fafc;
 
   color: #1f2937;
+}
+
+.dark body {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Form controls are styled inline across ~45 components; theming them once
+   here avoids white-on-white inputs in dark mode. */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 * {

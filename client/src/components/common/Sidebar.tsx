@@ -6,6 +6,8 @@ import {
   Brain,
   ClipboardCheck,
   BarChart3,
+  Lightbulb,
+  Settings,
   User
 } from "lucide-react";
 
@@ -58,9 +60,21 @@ const Sidebar = () => {
     },
 
     {
+      name:"Recommendations",
+      path:"/recommendations",
+      icon:<Lightbulb size={20}/>
+    },
+
+    {
       name:"Profile",
       path:"/profile",
       icon:<User size={20}/>
+    },
+
+    {
+      name:"Settings",
+      path:"/settings",
+      icon:<Settings size={20}/>
     }
 
   ];

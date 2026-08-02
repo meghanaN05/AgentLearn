@@ -138,6 +138,43 @@ def get_analytics(
     weak_topics = [item["topic"] for item in topic_performance if item["score"] < 60][:5]
     strong_topics = [item["topic"] for item in reversed(topic_performance) if item["score"] >= 75][:5]
 
+    # Chronological score history for the trend chart.
+    score_history = [
+        {
+            "label": f"T{index + 1}",
+            "score": round(attempt.score, 1),
+            "submittedAt": attempt.submitted_at.isoformat(),
+        }
+        for index, attempt in enumerate(reversed(attempts))
+    ]
+
+    # Last 7 days of measured activity. Minutes come from timed mock tests;
+    # `activities` counts every recorded event so an active day still shows.
+    today = datetime.utcnow().date()
+    minutes_by_day: dict[date, float] = defaultdict(float)
+    for attempt in attempts:
+        minutes_by_day[attempt.submitted_at.date()] += attempt.time_taken_seconds / 60
+
+    events_by_day: dict[date, int] = defaultdict(int)
+    for (created_at,) in (
+        db.query(AnalyticsEvent.created_at)
+        .filter(AnalyticsEvent.user_id == current_user.id)
+        .all()
+    ):
+        events_by_day[created_at.date()] += 1
+
+    daily_activity = []
+    for offset in range(6, -1, -1):
+        day = today - timedelta(days=offset)
+        daily_activity.append(
+            {
+                "day": day.strftime("%a"),
+                "date": day.isoformat(),
+                "minutes": round(minutes_by_day.get(day, 0.0), 1),
+                "activities": events_by_day.get(day, 0),
+            }
+        )
+
     weekly_progress = []
     for week_offset in range(4, -1, -1):
         start = datetime.utcnow() - timedelta(days=(week_offset + 1) * 7)
@@ -169,6 +206,8 @@ def get_analytics(
         "topicPerformance": topic_performance[:8],
         "weakTopics": weak_topics,
         "strongTopics": strong_topics,
+        "scoreHistory": score_history,
+        "dailyActivity": daily_activity,
         "weeklyProgress": weekly_progress,
     }
 

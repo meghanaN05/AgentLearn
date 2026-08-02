@@ -1,8 +1,6 @@
+/* globals.css owns `@import "tailwindcss"`. The v3-era @tailwind directives
+   that used to live here are no-ops under Tailwind v4. */
 @import "./styles/globals.css";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 body {
   margin: 0;

@@ -12,11 +12,11 @@ const StatsCard = ({
   icon,
 }: Props) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 flex justify-between items-center">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 flex justify-between items-center">
 
       <div>
 
-        <h3 className="text-gray-500">
+        <h3 className="text-gray-500 dark:text-gray-400">
           {title}
         </h3>
 

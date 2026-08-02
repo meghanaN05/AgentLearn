@@ -75,7 +75,7 @@ const Landing = () => {
 
           </h1>
 
-          <p className="text-gray-600 text-xl mt-8 max-w-3xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-300 text-xl mt-8 max-w-3xl mx-auto">
 
             Upload PDFs, chat with your notes, generate summaries,
             create quizzes, take mock tests and receive
@@ -122,7 +122,7 @@ const Landing = () => {
 
             <div
               key={feature.title}
-              className="bg-white rounded-xl shadow-lg p-8"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8"
             >
 
               {feature.icon}
@@ -133,7 +133,7 @@ const Landing = () => {
 
               </h3>
 
-              <p className="text-gray-500 mt-3">
+              <p className="text-gray-500 dark:text-gray-400 mt-3">
 
                 {feature.description}
 

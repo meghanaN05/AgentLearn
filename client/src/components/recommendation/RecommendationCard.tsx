@@ -22,7 +22,7 @@ const RecommendationCard = ({
   onClick,
 }: RecommendationCardProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition">
 
       <div className="flex justify-between items-start">
 
@@ -39,7 +39,7 @@ const RecommendationCard = ({
               {title}
             </h2>
 
-            <p className="text-gray-500 mt-2">
+            <p className="text-gray-500 dark:text-gray-400 mt-2">
               {description}
             </p>
 

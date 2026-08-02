@@ -102,9 +102,9 @@ const ChatWindow = () => {
   };
 
   return (
-    <div className="flex flex-col h-[80vh] bg-gray-50 rounded-xl shadow-lg overflow-hidden">
+    <div className="flex flex-col h-[80vh] bg-gray-50 dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
       {pdfs.length > 0 && (
-        <div className="p-4 border-b bg-white">
+        <div className="p-4 border-b bg-white dark:bg-gray-800">
           <label className="block text-sm font-medium mb-1">
             Answer from
           </label>
@@ -135,7 +135,7 @@ const ChatWindow = () => {
         )}
 
         {!loading && sources.length > 0 && (
-          <div className="mt-4 text-sm text-gray-600">
+          <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
             <p className="font-medium">
               Sources{usedExternalSearch ? " (includes web search)" : ""}:
             </p>

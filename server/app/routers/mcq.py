@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -17,44 +15,22 @@ from app.schemas.mcq import (
 )
 from app.services.document_service import document_service
 from app.services.llm_service import llm_service
+from app.services.question_parser import normalize_questions
 
 router = APIRouter(prefix="/mcq", tags=["mcq"])
 
 
 def _normalize_questions(raw_questions: list) -> list[MCQItem]:
-    """Keep only well-formed questions, and give every one a server-side id.
-
-    Model-supplied ids are discarded because they collide across generations,
-    which would let one set's answers grade against another's.
-    """
-    normalized: list[MCQItem] = []
-    seen_questions: set[str] = set()
-
-    for item in raw_questions:
-        question = str(item.get("question", "")).strip()
-        options = item.get("options") or []
-        correct = item.get("correctAnswer")
-
-        if not question or not isinstance(options, list) or len(options) != 4:
-            continue
-        if not isinstance(correct, int) or not 0 <= correct < len(options):
-            continue
-
-        key = question.casefold()
-        if key in seen_questions:
-            continue
-        seen_questions.add(key)
-
-        normalized.append(
-            MCQItem(
-                id=str(uuid.uuid4()),
-                question=question,
-                options=[str(option) for option in options],
-                correctAnswer=correct,
-                explanation=item.get("explanation"),
-            )
+    return [
+        MCQItem(
+            id=item["id"],
+            question=item["question"],
+            options=item["options"],
+            correctAnswer=item["correctAnswer"],
+            explanation=item["explanation"],
         )
-    return normalized
+        for item in normalize_questions(raw_questions)
+    ]
 
 
 @router.post("", response_model=MCQResponse)

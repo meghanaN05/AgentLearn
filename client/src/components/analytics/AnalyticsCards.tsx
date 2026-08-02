@@ -14,10 +14,10 @@ const AnalyticsCards = ({
   color = "text-blue-600",
 }: AnalyticsCardProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition">
       <div className="flex justify-between items-center">
         <div>
-          <p className="text-gray-500">{title}</p>
+          <p className="text-gray-500 dark:text-gray-400">{title}</p>
 
           <h2 className="text-3xl font-bold mt-2">
             {value}

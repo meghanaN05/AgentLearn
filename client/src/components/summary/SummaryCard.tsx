@@ -18,7 +18,7 @@ const SummaryCard = ({
   onDownload,
 }: SummaryCardProps) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition">
 
       <div className="flex justify-between">
 
@@ -28,12 +28,12 @@ const SummaryCard = ({
             {title}
           </h3>
 
-          <div className="flex items-center gap-2 text-gray-500 mt-3">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-3">
             <Calendar size={18} />
             <span>{createdAt}</span>
           </div>
 
-          <div className="flex items-center gap-2 text-gray-500 mt-2">
+          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mt-2">
             <FileText size={18} />
             <span>{words} Words</span>
           </div>

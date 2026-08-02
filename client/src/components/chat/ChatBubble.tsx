@@ -27,7 +27,7 @@ const ChatBubble = ({
         {timestamp && (
           <p
             className={`text-xs mt-2 ${
-              isUser ? "text-blue-100" : "text-gray-500"
+              isUser ? "text-blue-100" : "text-gray-500 dark:text-gray-400"
             }`}
           >
             {timestamp}

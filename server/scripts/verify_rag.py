@@ -35,6 +35,24 @@ def stub_generate(*, system_prompt, user_prompt, temperature=0.3, json_mode=Fals
     if "relevance" in system_prompt:
         return json.dumps({"relevance": "relevant", "confidence": 0.9}), 10
 
+    if "studyPlan" in system_prompt:
+        return json.dumps(
+            {
+                "recommendations": [
+                    {
+                        "title": "Revise tree traversal",
+                        "description": "Work through in-order and post-order examples.",
+                        "priority": "High",
+                        "topic": "Traversal",
+                    }
+                ],
+                "studyPlan": [
+                    {"topic": "Traversal", "duration": "45 min", "completed": False},
+                    {"topic": "Binary Trees", "duration": "30 min", "completed": False},
+                ],
+            }
+        ), 40
+
     if "questions" in system_prompt:
         # Two valid questions, one malformed (3 options) that must be dropped,
         # and one duplicate of the first that must be de-duplicated.
@@ -161,10 +179,88 @@ check("one unanswered", graded["unanswered"] == 1, str(graded["unanswered"]))
 check("skipping does not inflate score", graded["score"] == 50.0, str(graded["score"]))
 check("explanations revealed after submit", any(g["explanation"] for g in graded["results"]))
 
+# --- Summary ----------------------------------------------------------
+r = client.post(
+    "/api/summary", headers=H, json={"pdfId": doc_id, "summaryType": "short"}
+)
+check("summary 200", r.status_code == 200, r.text[:160])
+check("summary grounded in the document", "Doc chunk" in r.json()["summary"],
+      r.json()["summary"][:120])
+
+# --- Mock test: generate -> submit -> history -------------------------
+r = client.post(
+    "/api/mocktest",
+    headers=H,
+    json={"pdfId": doc_id, "difficulty": "medium", "numberOfQuestions": 4},
+)
+check("mocktest 200", r.status_code == 200, r.text[:200])
+test = r.json()
+test_questions = test["questions"]
+check("mocktest drops malformed + duplicate questions", len(test_questions) == 2,
+      str(len(test_questions)))
+check(
+    "mocktest answer key withheld",
+    all("correctAnswer" not in q for q in test_questions),
+)
+
+# Answer the first correctly (stub key is index 0) and the second wrongly.
+r = client.post(
+    "/api/mocktest/submit",
+    headers=H,
+    json={
+        "testId": test["testId"],
+        "answers": [
+            {"questionId": test_questions[0]["id"], "selectedOption": 0},
+            {"questionId": test_questions[1]["id"], "selectedOption": 3},
+        ],
+        "timeTakenSeconds": 300,
+    },
+)
+check("mocktest submit 200", r.status_code == 200, r.text[:200])
+graded_test = r.json()
+check("scored over the full test", graded_test["totalQuestions"] == len(test_questions),
+      str(graded_test["totalQuestions"]))
+check("no malformed topic leaked into grading",
+      "Bad" not in graded_test["weakTopics"] + graded_test["strongTopics"],
+      str(graded_test))
+check("one correct answer", graded_test["correctAnswers"] == 1, str(graded_test["correctAnswers"]))
+check("weak topic captured", len(graded_test["weakTopics"]) >= 1, str(graded_test["weakTopics"]))
+check("strong topic captured", len(graded_test["strongTopics"]) >= 1,
+      str(graded_test["strongTopics"]))
+
+r = client.get("/api/mocktest/attempts", headers=H)
+attempts = r.json()
+check("attempt history records the test", len(attempts) == 1, str(len(attempts)))
+check("measured time persisted", attempts[0]["timeTakenSeconds"] == 300,
+      str(attempts[0]["timeTakenSeconds"]))
+
+# --- Analytics reflects the real attempt ------------------------------
+a = client.get("/api/analytics", headers=H).json()
+check("studyHours from measured test time", a["studyHours"] == round(300 / 3600, 2),
+      str(a["studyHours"]))
+check("score history populated", len(a["scoreHistory"]) == 1, str(a["scoreHistory"]))
+check("topic accuracy computed from answers", len(a["topicPerformance"]) >= 1,
+      str(a["topicPerformance"]))
+check("daily activity covers 7 days", len(a["dailyActivity"]) == 7, str(len(a["dailyActivity"])))
+check("summaries counted", a["summariesGenerated"] == 1, str(a["summariesGenerated"]))
+
+# --- Recommendations --------------------------------------------------
+r = client.post("/api/recommendations/refresh", headers=H)
+check("recommendations refresh 200", r.status_code == 200, r.text[:200])
+recs = r.json()
+check("recommendation generated", len(recs["recommendations"]) == 1,
+      str(len(recs["recommendations"])))
+check("study plan generated", len(recs["studyPlan"]) == 2, str(len(recs["studyPlan"])))
+
+r = client.get("/api/recommendations", headers=H)
+check("recommendations persisted", len(r.json()["recommendations"]) == 1,
+      str(len(r.json()["recommendations"])))
+
 # --- Deleting a chatted-about PDF preserves history -------------------
 r = client.delete(f"/api/pdf/{doc_id}", headers=H)
-check("delete PDF with chat + MCQ history", r.status_code == 204, r.text[:200])
+check("delete PDF with chat + MCQ + test history", r.status_code == 204, r.text[:200])
 check("chat session survives", len(client.get("/api/chat/sessions", headers=H).json()) == 1)
+check("test history survives", len(client.get("/api/mocktest/attempts", headers=H).json()) == 1)
 
 print()
 if FAILURES:

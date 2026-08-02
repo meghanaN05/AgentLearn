@@ -1,63 +1,65 @@
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
+  BarChart,
+  Bar,
   Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend,
 } from "recharts";
 
-const data = [
-  { name: "DSA", value: 40 },
-  { name: "DBMS", value: 25 },
-  { name: "OS", value: 20 },
-  { name: "CN", value: 15 },
-];
+interface Props {
+  data: { topic: string; score: number; attempted: number }[];
+}
 
-const colors = [
-  "#2563EB",
-  "#16A34A",
-  "#F59E0B",
-  "#EF4444",
-];
+/** Green at or above 75%, amber to 60%, red below — the same thresholds the
+ *  backend uses to classify strong and weak topics. */
+const barColor = (score: number) => {
+  if (score >= 75) return "#16A34A";
+  if (score >= 60) return "#F59E0B";
+  return "#EF4444";
+};
 
-const TopicChart = () => {
+const TopicChart = ({ data }: Props) => {
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
 
       <h2 className="text-xl font-semibold mb-5">
-        Topic Distribution
+        Topic-wise Accuracy
       </h2>
 
-      <div className="h-80">
+      {data.length === 0 ? (
+        <p className="text-gray-500 dark:text-gray-400 py-16 text-center">
+          Take a mock test to see accuracy per topic.
+        </p>
+      ) : (
+        <div className="h-80">
 
-        <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%">
 
-          <PieChart>
+            <BarChart data={data} layout="vertical" margin={{ left: 24 }}>
 
-            <Pie
-              data={data}
-              dataKey="value"
-              outerRadius={100}
-              label
-            >
-              {data.map((_, index) => (
-                <Cell
-                  key={index}
-                  fill={colors[index]}
-                />
-              ))}
-            </Pie>
+              <CartesianGrid strokeDasharray="3 3" />
 
-            <Tooltip />
+              <XAxis type="number" domain={[0, 100]} unit="%" />
 
-            <Legend />
+              <YAxis type="category" dataKey="topic" width={110} />
 
-          </PieChart>
+              <Tooltip formatter={(value) => [`${value}%`, "Accuracy"]} />
 
-        </ResponsiveContainer>
+              <Bar dataKey="score">
+                {data.map((item) => (
+                  <Cell key={item.topic} fill={barColor(item.score)} />
+                ))}
+              </Bar>
 
-      </div>
+            </BarChart>
+
+          </ResponsiveContainer>
+
+        </div>
+      )}
 
     </div>
   );

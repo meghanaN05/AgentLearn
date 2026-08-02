@@ -20,7 +20,7 @@ const ChatInput = ({
   };
 
   return (
-    <div className="border-t p-4 flex gap-3 bg-white">
+    <div className="border-t p-4 flex gap-3 bg-white dark:bg-gray-800">
       <input
         className="flex-1 border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
         placeholder="Ask anything about your PDF..."
