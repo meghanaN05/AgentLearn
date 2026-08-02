@@ -1,13 +1,18 @@
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
+import { useLocation } from "react-router-dom";
 
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
+import { pageTransition } from "../../lib/motion";
 
 interface Props {
   children: ReactNode;
 }
 
 const Layout = ({ children }: Props) => {
+  const { pathname } = useLocation();
+
   return (
     <div className="flex">
 
@@ -17,9 +22,17 @@ const Layout = ({ children }: Props) => {
 
         <Navbar />
 
-        <main className="p-8">
+        {/* Keyed on pathname so each route re-runs the entrance rather than
+            swapping content in place. */}
+        <motion.main
+          key={pathname}
+          className="p-8"
+          variants={pageTransition}
+          initial="hidden"
+          animate="visible"
+        >
           {children}
-        </main>
+        </motion.main>
 
       </div>
 

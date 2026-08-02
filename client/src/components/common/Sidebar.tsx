@@ -13,6 +13,8 @@ import {
 
 import { NavLink } from "react-router-dom";
 
+import { APP_NAME } from "../../utils/constants";
+
 const Sidebar = () => {
 
   const menus = [
@@ -83,9 +85,9 @@ const Sidebar = () => {
 
     <aside className="bg-slate-900 text-white w-64 min-h-screen">
 
-      <div className="text-center py-8 text-3xl font-bold border-b border-slate-700">
+      <div className="px-6 py-6 text-xl font-semibold tracking-tight border-b border-slate-800">
 
-        LearnFlow AI
+        {APP_NAME}
 
       </div>
 
@@ -102,8 +104,10 @@ const Sidebar = () => {
 
               className={({isActive})=>
 
-                `flex items-center gap-4 px-6 py-4 hover:bg-slate-800 transition ${
-                  isActive ? "bg-blue-600":""
+                `flex items-center gap-3 px-6 py-3 text-sm transition-colors border-l-2 ${
+                  isActive
+                    ? "bg-slate-800 border-blue-500 text-white"
+                    : "border-transparent text-slate-300 hover:bg-slate-800/60 hover:text-white"
                 }`
 
               }

@@ -1,4 +1,4 @@
-export const APP_NAME = "AI Study Buddy";
+export const APP_NAME = "AgentLearn";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||

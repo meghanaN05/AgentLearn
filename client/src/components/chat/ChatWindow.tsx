@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { ArrowDown } from "lucide-react";
 
 import chatService from "../../services/chatService";
 import pdfService, { PDFResponse } from "../../services/pdfService";
 import ChatInput from "./ChatInput";
 import ChatHistory, { Message } from "./ChatHistory";
 import SuggestedQuestions from "./SuggestedQuestions";
-import Loader from "../common/Loader";
+import TypingIndicator from "./TypingIndicator";
 
 const ChatWindow = () => {
   const [searchParams] = useSearchParams();
@@ -18,6 +19,40 @@ const ChatWindow = () => {
   const [sources, setSources] = useState<string[]>([]);
   const [usedExternalSearch, setUsedExternalSearch] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [atBottom, setAtBottom] = useState(true);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const node = scrollRef.current;
+
+    if (node) {
+      node.scrollTo({ top: node.scrollHeight, behavior });
+    }
+  }, []);
+
+  // Track whether the user has scrolled up to read earlier messages, so a new
+  // answer never yanks them back down mid-read.
+  const handleScroll = () => {
+    const node = scrollRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    const distanceFromBottom =
+      node.scrollHeight - node.scrollTop - node.clientHeight;
+
+    setAtBottom(distanceFromBottom < 80);
+  };
+
+  // useLayoutEffect so the jump happens before paint, not as a visible scroll.
+  useLayoutEffect(() => {
+    if (atBottom) {
+      scrollToBottom(messages.length <= 1 ? "auto" : "smooth");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, loading]);
 
   useEffect(() => {
     pdfService
@@ -46,11 +81,16 @@ const ChatWindow = () => {
             timestamp: new Date(entry.created_at).toLocaleTimeString(),
           }))
         );
+        requestAnimationFrame(() => scrollToBottom("auto"));
       })
       .catch(() => toast.error("Could not load that conversation"));
-  }, [searchParams]);
+  }, [searchParams, scrollToBottom]);
 
   const sendMessage = async (text: string) => {
+    if (loading) {
+      return;
+    }
+
     const userMessage: Message = {
       id: crypto.randomUUID(),
       text,
@@ -59,6 +99,8 @@ const ChatWindow = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    setSources([]);
+    setAtBottom(true);
     setLoading(true);
 
     try {
@@ -101,13 +143,13 @@ const ChatWindow = () => {
     }
   };
 
+  const isEmpty = messages.length === 0;
+
   return (
-    <div className="flex flex-col h-[80vh] bg-gray-50 dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+    <div className="relative flex flex-col h-[80vh] bg-gray-50 dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
       {pdfs.length > 0 && (
-        <div className="p-4 border-b bg-white dark:bg-gray-800">
-          <label className="block text-sm font-medium mb-1">
-            Answer from
-          </label>
+        <div className="p-4 border-b dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0">
+          <label className="block text-sm font-medium mb-1">Answer from</label>
           <select
             className="w-full border rounded-lg p-2"
             value={selectedPdfId}
@@ -123,30 +165,67 @@ const ChatWindow = () => {
         </div>
       )}
 
-      <div className="p-6 overflow-y-auto flex-1">
-        <SuggestedQuestions onSelect={sendMessage} />
-
-        <ChatHistory messages={messages} />
-
-        {loading && (
-          <div className="flex justify-center py-4">
-            <Loader />
-          </div>
-        )}
-
-        {!loading && sources.length > 0 && (
-          <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
-            <p className="font-medium">
-              Sources{usedExternalSearch ? " (includes web search)" : ""}:
+      {/* data-lenis-prevent: page-level smooth scrolling must not swallow the
+          wheel here, or this transcript would never scroll and the auto-scroll
+          below would fight Lenis's interpolation. */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        data-lenis-prevent
+        className="flex-1 overflow-y-auto p-6"
+      >
+        {isEmpty ? (
+          <div className="h-full flex flex-col items-center justify-center text-center">
+            <h2 className="text-xl font-semibold mb-2">
+              Ask anything about your documents
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              Answers are grounded in your uploaded PDFs and cite the pages they
+              came from.
             </p>
-            <ul className="list-disc list-inside">
-              {sources.map((source) => (
-                <li key={source}>{source}</li>
-              ))}
-            </ul>
+            <SuggestedQuestions onSelect={sendMessage} />
           </div>
+        ) : (
+          <>
+            <ChatHistory messages={messages} />
+
+            {loading && <TypingIndicator />}
+
+            {!loading && sources.length > 0 && (
+              <div className="mt-2 mb-4 text-sm text-gray-600 dark:text-gray-300">
+                <p className="font-medium">
+                  Sources{usedExternalSearch ? " (includes web search)" : ""}:
+                </p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {sources.map((source) => (
+                    <span
+                      key={source}
+                      className="px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-xs"
+                    >
+                      {source}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      {/* Only shown when the user has scrolled away from the latest message. */}
+      {!atBottom && !isEmpty && (
+        <button
+          type="button"
+          onClick={() => {
+            setAtBottom(true);
+            scrollToBottom();
+          }}
+          aria-label="Jump to latest message"
+          className="absolute bottom-24 right-6 p-2 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700"
+        >
+          <ArrowDown size={18} />
+        </button>
+      )}
 
       <ChatInput onSend={sendMessage} loading={loading} />
     </div>
