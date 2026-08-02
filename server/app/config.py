@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 7
     algorithm: str = "HS256"
 
-    database_url: str = "postgresql://agentlearn:agentlearn@localhost:5432/agentlearn"
+    # Host port 5433 matches docker-compose, which avoids a local Postgres on 5432.
+    database_url: str = "postgresql://agentlearn:agentlearn@localhost:5433/agentlearn"
 
     upload_dir: str = "./uploads"
     max_upload_size_mb: int = 20
@@ -26,9 +27,14 @@ class Settings(BaseSettings):
     use_local_embeddings: bool = False
     local_embedding_model: str = "BAAI/bge-small-en-v1.5"
 
+    chunk_size: int = 800
+    chunk_overlap: int = 150
+
     chroma_persist_dir: str = "./chroma_data"
     retrieval_top_k: int = 5
     retrieval_confidence_threshold: float = 0.65
+    # Below this score a chunk is dropped before it ever reaches the LLM.
+    retrieval_min_score: float = 0.15
 
     tavily_api_key: str = ""
     enable_external_search: bool = True

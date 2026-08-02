@@ -7,7 +7,14 @@ from sqlalchemy.orm import Session
 from app.core.security import create_access_token, get_current_user, get_password_hash, verify_password
 from app.database import get_db
 from app.models import User
-from app.schemas.auth import AuthResponse, ProfileResponse, UserCreate, UserLogin, UserOut
+from app.schemas.auth import (
+    AuthResponse,
+    ProfileResponse,
+    UserCreate,
+    UserLogin,
+    UserOut,
+    UserUpdate,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -61,4 +68,27 @@ def login_for_access_token(
 
 @router.get("/profile", response_model=ProfileResponse)
 def profile(current_user: User = Depends(get_current_user)):
+    return ProfileResponse(user=UserOut.model_validate(current_user))
+
+
+@router.patch("/profile", response_model=ProfileResponse)
+def update_profile(
+    payload: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if payload.name is not None:
+        current_user.name = payload.name.strip()
+
+    if payload.password is not None:
+        # Re-authenticate before a password change so a leaked token alone
+        # cannot lock the real owner out of the account.
+        if not payload.currentPassword or not verify_password(
+            payload.currentPassword, current_user.hashed_password
+        ):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        current_user.hashed_password = get_password_hash(payload.password)
+
+    db.commit()
+    db.refresh(current_user)
     return ProfileResponse(user=UserOut.model_validate(current_user))

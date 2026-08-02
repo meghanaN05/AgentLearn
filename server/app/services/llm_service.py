@@ -9,6 +9,10 @@ from app.config import get_settings
 settings = get_settings()
 
 
+class LLMUnavailableError(RuntimeError):
+    """Raised when a generation is attempted without a configured LLM."""
+
+
 class LLMService:
     def __init__(self) -> None:
         self._client = None
@@ -30,11 +34,12 @@ class LLMService:
         json_mode: bool = False,
     ) -> tuple[str, int]:
         if self._client is None:
-            fallback = (
-                "AI generation is unavailable. Set OPENAI_API_KEY in the server .env file "
-                "to enable summaries, MCQs, chat, and recommendations."
+            # Surfaced as HTTP 503 by the routers. Returning placeholder prose
+            # here would get persisted as if it were a real assistant answer.
+            raise LLMUnavailableError(
+                "AI generation is unavailable. Set OPENAI_API_KEY in server/.env "
+                "to enable chat, summaries, MCQs, and recommendations."
             )
-            return fallback, 0
 
         kwargs: dict[str, Any] = {
             "model": settings.llm_model,

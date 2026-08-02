@@ -28,8 +28,11 @@ class AgentResponse:
 class AgentOrchestrator:
     """Coordinates retrieval, evaluation, external search, and response generation."""
 
-    def __init__(self) -> None:
-        self.embeddings = get_embedding_service()
+    @property
+    def embeddings(self):
+        # Resolved lazily: loading a local sentence-transformers model at import
+        # time would stall app startup before the first request even arrives.
+        return get_embedding_service()
 
     def run(
         self,
@@ -40,22 +43,27 @@ class AgentOrchestrator:
         conversation_history: list[dict] | None = None,
         task: str = "chat",
         extra_instructions: str = "",
+        json_mode: bool | None = None,
     ) -> AgentResponse:
         start = time.perf_counter()
         conversation_history = conversation_history or []
 
+        # Agent 1 — Retrieval.
         query_embedding = self.embeddings.embed_query(query)
         chunks = vector_store.search(
             query_embedding=query_embedding,
             user_id=user_id,
             document_id=document_id,
         )
+        chunks = [chunk for chunk in chunks if chunk.score >= settings.retrieval_min_score]
 
+        # Agent 2 — Retrieval evaluation.
         relevance, confidence = retrieval_evaluator.evaluate_with_llm(query, chunks)
         external_context = ""
         external_sources: list[str] = []
         external_search_used = False
 
+        # Agent 3 — External search, only when the knowledge base falls short.
         if relevance == "not_relevant" or confidence < settings.retrieval_confidence_threshold:
             external_context, external_sources = external_search_service.search(query)
             external_search_used = bool(external_context)
@@ -70,10 +78,16 @@ class AgentOrchestrator:
             f"{history_text}\nUser query: {query}\n\nContext:\n{context_blocks or 'No context available.'}"
         )
 
+        # Agent 4 — Response generation. Structured tasks parse the reply as JSON,
+        # so ask the model for JSON natively rather than scraping it back out of prose.
+        if json_mode is None:
+            json_mode = task in ("structured", "recommendation")
+
         answer, tokens = llm_service.generate(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             temperature=0.2 if task == "chat" else 0.4,
+            json_mode=json_mode,
         )
 
         sources = [f"Page {chunk.page_number}" for chunk in chunks[:5]]

@@ -22,6 +22,7 @@ interface AuthContextType {
   login: (data: LoginRequest) => Promise<void>;
   signup: (data: SignupRequest) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -75,6 +76,11 @@ export const AuthProvider = ({ children }: Props) => {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    const profile = await authService.getProfile();
+    setUser(profile.user);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -83,6 +89,7 @@ export const AuthProvider = ({ children }: Props) => {
         login,
         signup,
         logout,
+        refreshUser,
         isAuthenticated: !!user,
       }}
     >

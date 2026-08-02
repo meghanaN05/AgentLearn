@@ -7,13 +7,16 @@ import MCQCard from "../components/mcq/MCQCard";
 import MCQResult from "../components/mcq/MCQResult";
 import Loader from "../components/common/Loader";
 import pdfService, { PDFResponse } from "../services/pdfService";
-import mcqService, { MCQ } from "../services/mcqService";
+import mcqService, { MCQ, SubmitMCQResponse } from "../services/mcqService";
 
 const MCQPage = () => {
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [score, setScore] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [questions, setQuestions] = useState<MCQ[]>([]);
+  const [setId, setSetId] = useState("");
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [graded, setGraded] = useState<SubmitMCQResponse | null>(null);
   const [pdfs, setPdfs] = useState<PDFResponse[]>([]);
   const [selectedPdfId, setSelectedPdfId] = useState("");
 
@@ -41,19 +44,42 @@ const MCQPage = () => {
 
     try {
       setLoading(true);
-      setScore(0);
+      setGraded(null);
+      setAnswers({});
       const response = await mcqService.generateMCQs({
         pdfId: selectedPdfId,
         numberOfQuestions,
         difficulty: difficulty.toLowerCase() as "easy" | "medium" | "hard",
       });
       setQuestions(response.questions);
+      setSetId(response.setId);
       setGenerated(true);
       toast.success("MCQs generated");
     } catch {
       toast.error("Failed to generate MCQs");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Grading happens server-side: the answer key is never sent to the browser
+  // until the set is submitted.
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      const response = await mcqService.submitMCQs({
+        setId,
+        answers: Object.entries(answers).map(([questionId, selectedOption]) => ({
+          questionId,
+          selectedOption,
+        })),
+      });
+      setGraded(response);
+      toast.success(`Scored ${response.score}%`);
+    } catch {
+      toast.error("Failed to submit answers");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -97,22 +123,46 @@ const MCQPage = () => {
 
         {generated && !loading && (
           <>
-            {questions.map((mcq, index) => (
-              <MCQCard
-                key={mcq.id}
-                questionNumber={index + 1}
-                question={mcq.question}
-                options={mcq.options}
-                correctAnswer={mcq.correctAnswer ?? 0}
-                onAnswer={(_, correct) => {
-                  if (correct) {
-                    setScore((prev) => prev + 1);
-                  }
-                }}
-              />
-            ))}
+            {questions.map((mcq, index) => {
+              const result = graded?.results.find(
+                (item) => item.questionId === mcq.id
+              );
 
-            <MCQResult total={questions.length} correct={score} />
+              return (
+                <MCQCard
+                  key={mcq.id}
+                  questionNumber={index + 1}
+                  question={mcq.question}
+                  options={mcq.options}
+                  selected={answers[mcq.id] ?? null}
+                  onSelect={(index) =>
+                    setAnswers((prev) => ({ ...prev, [mcq.id]: index }))
+                  }
+                  revealed={
+                    result
+                      ? {
+                          correctAnswer: result.correctAnswer,
+                          isCorrect: result.isCorrect,
+                          explanation: result.explanation,
+                        }
+                      : undefined
+                  }
+                />
+              );
+            })}
+
+            {graded ? (
+              <MCQResult total={graded.total} correct={graded.correctAnswers} />
+            ) : (
+              <button
+                type="button"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
+                disabled={submitting || Object.keys(answers).length === 0}
+                onClick={handleSubmit}
+              >
+                {submitting ? "Submitting..." : "Submit Answers"}
+              </button>
+            )}
           </>
         )}
       </div>

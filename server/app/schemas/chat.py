@@ -19,3 +19,13 @@ class ChatMessageOut(BaseModel):
     role: str
     content: str
     created_at: str
+
+
+class ChatSessionOut(BaseModel):
+    id: str
+    title: str
+    documentId: str | None = None
+    messageCount: int
+    lastMessage: str | None = None
+    createdAt: str
+    updatedAt: str

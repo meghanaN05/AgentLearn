@@ -1,36 +1,25 @@
-import { useState } from "react";
-
 interface MCQCardProps {
   questionNumber: number;
   question: string;
   options: string[];
-  correctAnswer: number;
-  onAnswer?: (
-    selected: number,
-    correct: boolean
-  ) => void;
+  selected: number | null;
+  onSelect: (index: number) => void;
+  /** Present only after server-side grading; drives the answer colouring. */
+  revealed?: {
+    correctAnswer: number;
+    isCorrect: boolean;
+    explanation?: string | null;
+  };
 }
 
 const MCQCard = ({
   questionNumber,
   question,
   options,
-  correctAnswer,
-  onAnswer,
+  selected,
+  onSelect,
+  revealed,
 }: MCQCardProps) => {
-  const [selected, setSelected] = useState<number | null>(null);
-
-  const handleSelect = (index: number) => {
-    if (selected !== null) return;
-
-    setSelected(index);
-
-    onAnswer?.(
-      index,
-      index === correctAnswer
-    );
-  };
-
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
 
@@ -45,20 +34,21 @@ const MCQCard = ({
           let classes =
             "w-full text-left border rounded-lg p-3 transition ";
 
-          if (selected !== null) {
-            if (index === correctAnswer)
-              classes +=
-                "bg-green-100 border-green-600";
-
+          if (revealed) {
+            if (index === revealed.correctAnswer)
+              classes += "bg-green-100 border-green-600";
             else if (index === selected)
-              classes +=
-                "bg-red-100 border-red-600";
+              classes += "bg-red-100 border-red-600";
+          } else if (index === selected) {
+            classes += "bg-blue-50 border-blue-600";
           }
 
           return (
             <button
               key={index}
-              onClick={() => handleSelect(index)}
+              type="button"
+              disabled={Boolean(revealed)}
+              onClick={() => onSelect(index)}
               className={classes}
             >
               {String.fromCharCode(65 + index)}. {option}
@@ -67,6 +57,17 @@ const MCQCard = ({
         })}
 
       </div>
+
+      {revealed && (
+        <div className="mt-4 text-sm">
+          {selected === null && (
+            <p className="text-amber-700 font-medium">Not answered</p>
+          )}
+          {revealed.explanation && (
+            <p className="text-gray-600 mt-1">{revealed.explanation}</p>
+          )}
+        </div>
+      )}
 
     </div>
   );

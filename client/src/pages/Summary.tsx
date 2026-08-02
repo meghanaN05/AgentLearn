@@ -55,6 +55,18 @@ const Summary = () => {
     }
   };
 
+  const handleDownload = () => {
+    const blob = new Blob([summary], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "summary.md";
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Layout>
       <div className="space-y-8">
@@ -98,7 +110,12 @@ const Summary = () => {
         {summary && !loading && (
           <>
             <SummaryViewer summary={summary} />
-            <SummaryCard title="Latest Summary" preview={summary.slice(0, 200)} />
+            <SummaryCard
+              title="Latest Summary"
+              createdAt={new Date().toLocaleString()}
+              words={summary.trim().split(/\s+/).length}
+              onDownload={handleDownload}
+            />
           </>
         )}
       </div>

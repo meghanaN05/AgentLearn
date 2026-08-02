@@ -17,12 +17,30 @@ class MCQItem(BaseModel):
 
 
 class MCQResponse(BaseModel):
+    setId: str
     questions: list[MCQItem]
 
 
+class MCQAnswer(BaseModel):
+    questionId: str
+    selectedOption: int
+
+
 class SubmitMCQRequest(BaseModel):
-    pdfId: str
-    answers: list[dict]
+    # setId pins grading to the exact set that was served. pdfId alone is
+    # ambiguous once a user has generated more than one set for a document.
+    setId: str | None = None
+    pdfId: str | None = None
+    answers: list[MCQAnswer]
+
+
+class MCQGradedItem(BaseModel):
+    questionId: str
+    question: str
+    selectedOption: int | None
+    correctAnswer: int
+    isCorrect: bool
+    explanation: str | None = None
 
 
 class SubmitMCQResponse(BaseModel):
@@ -30,3 +48,5 @@ class SubmitMCQResponse(BaseModel):
     total: int
     correctAnswers: int
     wrongAnswers: int
+    unanswered: int
+    results: list[MCQGradedItem]

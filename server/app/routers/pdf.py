@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Query, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -21,25 +21,34 @@ def _serialize_document(document) -> DocumentOut:
         size=document.file_size,
         uploaded_at=document.uploaded_at,
         processing_status=document.processing_status,
+        processing_error=document.processing_error,
     )
 
 
 @router.get("", response_model=list[DocumentOut])
 def list_pdfs(
+    search: str | None = Query(default=None, description="Filter by filename"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    documents = document_service.list_documents(db, current_user.id)
+    if search:
+        documents = document_service.search_documents(db, current_user.id, search)
+    else:
+        documents = document_service.list_documents(db, current_user.id)
     return [_serialize_document(doc) for doc in documents]
 
 
 @router.post("/upload", response_model=DocumentOut, status_code=201)
 async def upload_pdf(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     document = await document_service.upload_document(db, current_user.id, file)
+    background_tasks.add_task(
+        document_service.process_document_in_background, document.id
+    )
     return _serialize_document(document)
 
 

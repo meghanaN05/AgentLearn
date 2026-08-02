@@ -1,5 +1,7 @@
-import os
+from __future__ import annotations
+
 import re
+from collections import Counter
 from pathlib import Path
 
 from pypdf import PdfReader
@@ -15,49 +17,61 @@ def ensure_upload_dir() -> Path:
     return path
 
 
-def extract_text_from_pdf(file_path: str) -> tuple[str, int]:
+def extract_pages(file_path: str) -> list[str]:
+    """Extract text page by page so chunks can keep an accurate page number."""
     reader = PdfReader(file_path)
-    pages_text: list[str] = []
-
-    for page in reader.pages:
-        text = page.extract_text() or ""
-        pages_text.append(text)
-
-    full_text = "\n\n".join(pages_text)
-    return full_text, len(reader.pages)
+    return [(page.extract_text() or "") for page in reader.pages]
 
 
 def clean_text(text: str) -> str:
     text = re.sub(r"\s+", " ", text)
     text = re.sub(r"[^\w\s.,;:!?()\[\]{}\-+/=%@#&*\"'`~]", " ", text)
-    return text.strip()
+    return re.sub(r"\s+", " ", text).strip()
 
 
-def chunk_text(text: str, chunk_size: int = 800, overlap: int = 150) -> list[str]:
-    words = text.split()
-    if not words:
+def chunk_pages(
+    pages: list[str],
+    chunk_size: int | None = None,
+    overlap: int | None = None,
+) -> list[dict]:
+    """Chunk a document while tracking which page each chunk came from.
+
+    Words are tagged with their source page before the sliding window runs, so a
+    chunk straddling a page break still reports the page it mostly covers.
+    """
+    chunk_size = chunk_size or settings.chunk_size
+    overlap = overlap or settings.chunk_overlap
+
+    # (word, page_number) pairs; page numbers are 1-indexed for display.
+    tagged: list[tuple[str, int]] = []
+    for page_index, page_text in enumerate(pages):
+        for word in clean_text(page_text).split():
+            tagged.append((word, page_index + 1))
+
+    if not tagged:
         return []
 
-    chunks: list[str] = []
+    chunks: list[dict] = []
     start = 0
 
-    while start < len(words):
-        end = min(start + chunk_size, len(words))
-        chunk = " ".join(words[start:end])
-        if chunk.strip():
-            chunks.append(chunk.strip())
-        if end >= len(words):
+    while start < len(tagged):
+        end = min(start + chunk_size, len(tagged))
+        window = tagged[start:end]
+        content = " ".join(word for word, _ in window).strip()
+
+        if content:
+            # The page contributing the most words to the chunk wins the citation.
+            page_number = Counter(page for _, page in window).most_common(1)[0][0]
+            chunks.append(
+                {
+                    "content": content,
+                    "page_number": page_number,
+                    "chunk_index": len(chunks),
+                }
+            )
+
+        if end >= len(tagged):
             break
         start = max(end - overlap, start + 1)
 
     return chunks
-
-
-def estimate_page_for_chunk(full_text: str, chunk: str, total_pages: int) -> int:
-    if total_pages <= 1:
-        return 1
-    position = full_text.find(chunk[: min(80, len(chunk))])
-    if position < 0:
-        return 1
-    ratio = position / max(len(full_text), 1)
-    return max(1, min(total_pages, int(ratio * total_pages) + 1))

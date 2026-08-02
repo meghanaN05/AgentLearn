@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models import AnalyticsEvent, MCQSet, User
 from app.schemas.mcq import (
     GenerateMCQRequest,
+    MCQGradedItem,
     MCQItem,
     MCQResponse,
     SubmitMCQRequest,
@@ -21,14 +22,35 @@ router = APIRouter(prefix="/mcq", tags=["mcq"])
 
 
 def _normalize_questions(raw_questions: list) -> list[MCQItem]:
+    """Keep only well-formed questions, and give every one a server-side id.
+
+    Model-supplied ids are discarded because they collide across generations,
+    which would let one set's answers grade against another's.
+    """
     normalized: list[MCQItem] = []
+    seen_questions: set[str] = set()
+
     for item in raw_questions:
+        question = str(item.get("question", "")).strip()
+        options = item.get("options") or []
+        correct = item.get("correctAnswer")
+
+        if not question or not isinstance(options, list) or len(options) != 4:
+            continue
+        if not isinstance(correct, int) or not 0 <= correct < len(options):
+            continue
+
+        key = question.casefold()
+        if key in seen_questions:
+            continue
+        seen_questions.add(key)
+
         normalized.append(
             MCQItem(
-                id=item.get("id") or str(uuid.uuid4()),
-                question=item["question"],
-                options=item["options"],
-                correctAnswer=item.get("correctAnswer"),
+                id=str(uuid.uuid4()),
+                question=question,
+                options=[str(option) for option in options],
+                correctAnswer=correct,
                 explanation=item.get("explanation"),
             )
         )
@@ -82,16 +104,14 @@ def generate_mcqs(
         )
     )
     db.commit()
+    db.refresh(mcq_set)
 
+    # correctAnswer and explanation are withheld until the set is submitted.
     public_questions = [
-        MCQItem(
-            id=question.id,
-            question=question.question,
-            options=question.options,
-        )
+        MCQItem(id=question.id, question=question.question, options=question.options)
         for question in questions
     ]
-    return MCQResponse(questions=public_questions)
+    return MCQResponse(setId=mcq_set.id, questions=public_questions)
 
 
 @router.post("/submit", response_model=SubmitMCQResponse)
@@ -100,34 +120,66 @@ def submit_mcqs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    mcq_set = (
-        db.query(MCQSet)
-        .filter(MCQSet.document_id == payload.pdfId, MCQSet.user_id == current_user.id)
-        .order_by(MCQSet.created_at.desc())
-        .first()
-    )
+    query = db.query(MCQSet).filter(MCQSet.user_id == current_user.id)
+    if payload.setId:
+        query = query.filter(MCQSet.id == payload.setId)
+    elif payload.pdfId:
+        query = query.filter(MCQSet.document_id == payload.pdfId)
+    else:
+        raise HTTPException(status_code=400, detail="Provide either setId or pdfId")
+
+    mcq_set = query.order_by(MCQSet.created_at.desc()).first()
     if not mcq_set:
         raise HTTPException(status_code=404, detail="MCQ set not found")
 
-    question_map = {item["id"]: item for item in mcq_set.questions}
+    selected_by_question = {answer.questionId: answer.selectedOption for answer in payload.answers}
     correct = 0
     wrong = 0
+    unanswered = 0
+    results = []
 
-    for answer in payload.answers:
-        question = question_map.get(answer["questionId"])
-        if not question:
-            continue
-        if answer["selectedOption"] == question.get("correctAnswer"):
+    # Iterate the stored set, not the submission, so skipped questions still
+    # count against the score instead of quietly shrinking the denominator.
+    for question in mcq_set.questions:
+        selected = selected_by_question.get(question["id"])
+        expected = question.get("correctAnswer")
+        is_correct = selected is not None and selected == expected
+
+        if selected is None:
+            unanswered += 1
+        elif is_correct:
             correct += 1
         else:
             wrong += 1
 
-    total = len(payload.answers)
+        results.append(
+            MCQGradedItem(
+                questionId=question["id"],
+                question=question["question"],
+                selectedOption=selected,
+                correctAnswer=expected,
+                isCorrect=is_correct,
+                explanation=question.get("explanation"),
+            )
+        )
+
+    total = len(mcq_set.questions)
     score = round((correct / total) * 100, 2) if total else 0.0
+
+    db.add(
+        AnalyticsEvent(
+            user_id=current_user.id,
+            event_type="mcq_submitted",
+            event_metadata={"set_id": mcq_set.id, "score": score},
+        )
+    )
+    db.commit()
 
     return SubmitMCQResponse(
         score=score,
         total=total,
         correctAnswers=correct,
         wrongAnswers=wrong,
+        unanswered=unanswered,
+        results=results,
     )

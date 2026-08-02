@@ -10,6 +10,7 @@ class DocumentOut(BaseModel):
     size: int
     uploaded_at: datetime
     processing_status: str = "completed"
+    processing_error: str | None = None
 
     model_config = {"from_attributes": True}
 

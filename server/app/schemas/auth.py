@@ -12,6 +12,12 @@ class UserLogin(BaseModel):
     password: str
 
 
+class UserUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=255)
+    password: str | None = Field(default=None, min_length=6, max_length=128)
+    currentPassword: str | None = None
+
+
 class UserOut(BaseModel):
     id: str
     name: str

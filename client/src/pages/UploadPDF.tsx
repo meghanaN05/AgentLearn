@@ -22,13 +22,25 @@ const UploadPDF = () => {
     setUploading(true);
 
     try {
+      // Upload returns as soon as the file is stored; extraction and embedding
+      // run in the background, so each document is followed to completion.
       for (const file of selectedFiles) {
-        await pdfService.uploadPDF(file);
+        const uploaded = await pdfService.uploadPDF(file);
+        const processed = await pdfService.waitForProcessing(uploaded.id);
+
+        if (processed.processing_status === "failed") {
+          toast.error(
+            `${processed.filename}: ${
+              processed.processing_error ?? "processing failed"
+            }`
+          );
+        }
       }
+
       toast.success(
         selectedFiles.length === 1
-          ? "PDF uploaded and processed"
-          : `${selectedFiles.length} PDFs uploaded`
+          ? "PDF uploaded and indexed"
+          : `${selectedFiles.length} PDFs uploaded and indexed`
       );
       setRefreshKey((prev) => prev + 1);
     } catch {
