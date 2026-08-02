@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 
 from app.config import get_settings
@@ -16,10 +17,26 @@ class EmbeddingService:
             from openai import OpenAI
 
             self._openai_client = OpenAI(api_key=settings.openai_api_key)
+            self._model_id = f"openai:{settings.embedding_model}"
         else:
             from sentence_transformers import SentenceTransformer
 
             self._local_model = SentenceTransformer(settings.local_embedding_model)
+            self._model_id = f"local:{settings.local_embedding_model}"
+
+    @property
+    def model_id(self) -> str:
+        """Identifies which model produced a vector.
+
+        Vectors from different models are not comparable and usually differ in
+        dimensionality, so this tags both the vector store collection and each
+        indexed document.
+        """
+        return self._model_id
+
+    @property
+    def collection_suffix(self) -> str:
+        return re.sub(r"[^a-zA-Z0-9]+", "_", self._model_id).strip("_").lower()
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         if not texts:

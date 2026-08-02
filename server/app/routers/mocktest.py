@@ -40,6 +40,7 @@ def generate_mock_test(
         document_id=payload.pdfId,
         task="structured",
         extra_instructions=instructions,
+        whole_document=payload.topic is None,
     )
 
     try:

@@ -54,6 +54,8 @@ def generate_mcqs(
         document_id=payload.pdfId,
         task="structured",
         extra_instructions=instructions,
+        # Questions over a whole document should draw from all of it.
+        whole_document=payload.topic is None,
     )
 
     try:

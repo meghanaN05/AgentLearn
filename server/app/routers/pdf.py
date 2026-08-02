@@ -9,11 +9,13 @@ from app.database import get_db
 from app.models import User
 from app.schemas.document import DocumentOut, DocumentRename
 from app.services.document_service import document_service
+from app.services.embedding_service import get_embedding_service
 
 router = APIRouter(prefix="/pdf", tags=["pdf"])
 
 
 def _serialize_document(document) -> DocumentOut:
+    current_model = get_embedding_service().model_id
     return DocumentOut(
         id=document.id,
         filename=document.filename,
@@ -22,6 +24,12 @@ def _serialize_document(document) -> DocumentOut:
         uploaded_at=document.uploaded_at,
         processing_status=document.processing_status,
         processing_error=document.processing_error,
+        embedding_model=document.embedding_model,
+        needs_reindex=(
+            document.processing_status == "completed"
+            and document.embedding_model is not None
+            and document.embedding_model != current_model
+        ),
     )
 
 
@@ -82,6 +90,25 @@ def delete_pdf(
     current_user: User = Depends(get_current_user),
 ):
     document_service.delete_document(db, current_user.id, document_id)
+
+
+@router.post("/{document_id}/reindex", response_model=DocumentOut, status_code=202)
+def reindex_pdf(
+    document_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Rebuild a document's embeddings with the currently configured model.
+
+    Needed after switching embedding models (for example adding an OpenAI key
+    to a knowledge base that was indexed with the local model).
+    """
+    document = document_service.reindex_document(db, current_user.id, document_id)
+    background_tasks.add_task(
+        document_service.process_document_in_background, document.id
+    )
+    return _serialize_document(document)
 
 
 @router.get("/{document_id}/download")

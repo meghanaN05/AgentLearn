@@ -57,6 +57,9 @@ class Document(Base):
     total_pages: Mapped[int] = mapped_column(Integer, default=0)
     processing_status: Mapped[str] = mapped_column(String(50), default="pending")
     processing_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Which embedding model produced this document's vectors. If the configured
+    # model changes, the document needs re-indexing before it is retrievable.
+    embedding_model: Mapped[str | None] = mapped_column(String(255), nullable=True)
     uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="documents")

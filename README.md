@@ -128,6 +128,7 @@ the agent pipeline without spending API credits.
 | POST | `/api/pdf/upload` | Upload (returns immediately; processes in background) |
 | GET | `/api/pdf/{id}` | Poll `processing_status` |
 | PATCH | `/api/pdf/{id}` | Rename |
+| POST | `/api/pdf/{id}/reindex` | Rebuild embeddings after changing embedding model |
 | DELETE | `/api/pdf/{id}` | Delete (keeps chats/tests, clears the link) |
 | POST | `/api/chat` | AI chat |
 | GET | `/api/chat/sessions?search=` | List / search past conversations |
@@ -176,14 +177,43 @@ client build** — never put a secret in `client/.env`.
 - Chunks carry the page they came from, so citations point at real pages
 - MCQ and mock-test answer keys are never sent to the browser before submission
 
+### Changing the embedding model
+
+Vectors from different embedding models are not comparable and differ in
+dimensionality (`text-embedding-3-small` is 1536, `bge-small-en-v1.5` is 384).
+Each model therefore gets its **own Chroma collection**, and every document
+records the model that indexed it.
+
+If you add an `OPENAI_API_KEY` to a knowledge base that was built with the local
+model, existing documents come back with `needs_reindex: true` and stay
+unretrievable until you call `POST /api/pdf/{id}/reindex`. Without the
+per-model collections this instead fails at query time with
+`InvalidDimensionException`.
+
+### Retrieval strategy
+
+- **Specific questions** use top-k similarity search.
+- **Whole-document summaries and question sets** (no `topic` given) sample
+  chunks evenly across the document instead. A vague instruction like
+  "summarise this document" has low similarity to any particular passage, so
+  top-k would return an arbitrary corner of the text rather than a
+  representative spread.
+- `retrieval_confidence_threshold` only applies when no LLM is configured.
+  Absolute cosine values are model-dependent, so it must be re-tuned if you
+  change embedding models. When an LLM is available its verdict decides whether
+  Agent 3 runs, because its confidence is a self-assessment rather than a
+  similarity score.
+
 ## Known Gaps
 
 Honest list of what is *not* production-ready yet:
 
 - **No migrations.** Tables are created with `Base.metadata.create_all()` on
   startup, which cannot alter an existing schema. Alembic is in
-  `requirements.txt` but no migration set exists — model changes currently need
-  a manual schema reset. This is the first thing to fix before any real deploy.
+  `requirements.txt` but no migration set exists — adding a column currently
+  needs a hand-written `ALTER TABLE` (this already bit us once when
+  `documents.embedding_model` was added). This is the first thing to fix
+  before any real deploy.
 - **No automated test suite.** `scripts/` holds two verification scripts, not
   unit tests. There is no CI.
 - **`studyHours` only counts mock-test time**, the one activity that is actually

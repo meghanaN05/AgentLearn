@@ -146,7 +146,19 @@ class DocumentService:
         db.delete(document)
         db.commit()
 
+    def reindex_document(self, db: Session, user_id: str, document_id: str) -> Document:
+        """Rebuild a document's vectors with the currently configured model."""
+        document = self.get_document(db, user_id, document_id)
+        document.processing_status = "processing"
+        document.processing_error = None
+        db.commit()
+        return document
+
     def _process_document(self, db: Session, document: Document) -> None:
+        # Drop any vectors from a previous run or a previous embedding model.
+        vector_store.delete_document_chunks(document.id, document.user_id)
+        db.query(DocumentChunk).filter(DocumentChunk.document_id == document.id).delete()
+
         pages = extract_pages(document.file_path)
         document.total_pages = len(pages)
 
@@ -189,8 +201,10 @@ class DocumentService:
             document_id=document.id,
             chunks=vector_payload,
             embeddings=embeddings,
+            model_id=embedding_service.model_id,
         )
 
+        document.embedding_model = embedding_service.model_id
         db.add_all(chunk_records)
         db.commit()
 

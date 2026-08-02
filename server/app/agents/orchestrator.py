@@ -44,18 +44,33 @@ class AgentOrchestrator:
         task: str = "chat",
         extra_instructions: str = "",
         json_mode: bool | None = None,
+        whole_document: bool = False,
     ) -> AgentResponse:
         start = time.perf_counter()
         conversation_history = conversation_history or []
 
-        # Agent 1 — Retrieval.
-        query_embedding = self.embeddings.embed_query(query)
-        chunks = vector_store.search(
-            query_embedding=query_embedding,
-            user_id=user_id,
-            document_id=document_id,
-        )
-        chunks = [chunk for chunk in chunks if chunk.score >= settings.retrieval_min_score]
+        # Agent 1 — Retrieval. Scoped to the active embedding model so a query
+        # is never compared against vectors produced by a different one.
+        if whole_document and document_id:
+            # Summaries and question sets covering a whole document need spread,
+            # not similarity to a vague instruction.
+            chunks = vector_store.get_document_span(
+                user_id=user_id,
+                document_id=document_id,
+                model_id=self.embeddings.model_id,
+                limit=settings.coverage_chunk_limit,
+            )
+        else:
+            query_embedding = self.embeddings.embed_query(query)
+            chunks = vector_store.search(
+                query_embedding=query_embedding,
+                user_id=user_id,
+                model_id=self.embeddings.model_id,
+                document_id=document_id,
+            )
+            chunks = [
+                chunk for chunk in chunks if chunk.score >= settings.retrieval_min_score
+            ]
 
         # Agent 2 — Retrieval evaluation.
         relevance, confidence = retrieval_evaluator.evaluate_with_llm(query, chunks)
@@ -64,7 +79,9 @@ class AgentOrchestrator:
         external_search_used = False
 
         # Agent 3 — External search, only when the knowledge base falls short.
-        if relevance == "not_relevant" or confidence < settings.retrieval_confidence_threshold:
+        if retrieval_evaluator.should_search_externally(
+            relevance, confidence, has_llm=llm_service.is_available
+        ):
             external_context, external_sources = external_search_service.search(query)
             external_search_used = bool(external_context)
 

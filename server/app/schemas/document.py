@@ -11,6 +11,10 @@ class DocumentOut(BaseModel):
     uploaded_at: datetime
     processing_status: str = "completed"
     processing_error: str | None = None
+    embedding_model: str | None = None
+    # True when the document was indexed with a different embedding model than
+    # the one now configured; it will not be retrievable until re-indexed.
+    needs_reindex: bool = False
 
     model_config = {"from_attributes": True}
 
